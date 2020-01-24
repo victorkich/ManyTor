@@ -48,10 +48,10 @@ class ArmRL(threading.Thread):
         rt.setDaemon(True)
         rt.start()
 
-        goals = np.array([30, 70, 50, 60])
+        goals = np.array([0, 0, 0, 0])
         self.ctarget(goals, 300)
 
-        goals = np.array([130, -70, 50, 90])
+        goals = np.array([0, 0, 0, 0])
         self.ctarget(goals, 200)
 
     def fk(self, mode):
@@ -79,7 +79,8 @@ class ArmRL(threading.Thread):
 
     def realtime(self):
         while True:
-            # Modes -> 1 = first joint / 2 = second joint / 3 = third joint / 4 = fourth joint
+            # Modes -> 1 = first joint / 2 = second joint
+            #          3 = third joint / 4 = fourth joint
             df = pd.DataFrame(np.zeros(3)).T
             df2 = pd.DataFrame(self.fk(mode=i)[0:3, 3] for i in range(2,5))
             df = df.append(df2).reset_index(drop=True)
@@ -116,6 +117,7 @@ def animate(i):
     ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
     ax.scatter3D(x, y, z, color='black', label='Joints')
     ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
+    ax.scatter3D(0,0,0, edgecolors='b', s=155000, marker='o', facecolor=(0,0,0,0))
     ax.legend()
     ax.set_xlabel('x')
     ax.set_ylabel('y')
