@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 import time
 import threading
-import random
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -47,12 +46,32 @@ class ArmRL(threading.Thread):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
         rt.setDaemon(True)
         rt.start()
+        obj = threading.Thread(name = 'objectives', target = self.objectives)
+        obj.setDaemon(True)
+        obj.start()
 
-        goals = np.array([0, 0, 0, 0])
+        goals = np.array([15, 25, 35, 45])
         self.ctarget(goals, 300)
 
-        goals = np.array([0, 0, 0, 0])
+        goals = np.array([34, 10, 70, -100])
         self.ctarget(goals, 200)
+
+    def objectives(self):
+        while True:
+            obj_number = np.random.randint(low=2, high=11, size=1)
+            print(obj_number)
+            self.points = []
+            cont = 0
+            while cont < obj_number:
+                rands = np.random.randn(3)*50
+                print(rands)
+                value = abs(rands[0]) + abs(rands[1]) + abs(rands[2])
+                if(value <= 55.6 and rands[2] >= 0):
+                    self.points.append(rands)
+                    cont = cont + 1
+            self.plotpoints = True
+            while True:
+                time.sleep(0.1)
 
     def fk(self, mode):
         ''' Forward Kinematics
@@ -103,7 +122,7 @@ class ArmRL(threading.Thread):
         track = np.linspace(self.goals, targ, num=iterations)
         for t in track:
             self.goals = t
-            print(t)
+            #print(t)
             time.sleep(0.03)
         self.stop = True
 
@@ -117,8 +136,15 @@ def animate(i):
     ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
     ax.scatter3D(x, y, z, color='black', label='Joints')
     ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
-    ax.scatter3D(0,0,0, edgecolors='b', s=155000, marker='o', facecolor=(0,0,0,0))
-    ax.legend()
+    ax.scatter(0, 0, plotnonfinite=True, s=155000, norm=1, alpha=0.2, lw=0)
+
+    if arm.plotpoints == True:
+        cont = 0
+        for p in arm.points:
+            cont = cont + 1
+            ax.scatter3D(p[0], p[1], p[2], color='green', label='Objective: {}'.format(cont))
+
+    ax.legend(loc=2, prop={'size':10})
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     ax.set_zlabel('z')
