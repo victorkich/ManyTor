@@ -1,10 +1,12 @@
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
-from matplotlib import animation
+from matplotlib.animation import FuncAnimation
+import math
 import numpy as np
 import pandas as pd
 import time
 import threading
+import random
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
@@ -41,6 +43,7 @@ class ArmRL(threading.Thread):
 
         self.zeros = np.array([210.0, 180.0, 65.0, 153.0])
         self.goals = np.array([0.0 for i in range(4)])
+        self.plotpoints = False
 
     def run(self):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
@@ -50,31 +53,43 @@ class ArmRL(threading.Thread):
         obj.setDaemon(True)
         obj.start()
 
-        goals = np.array([15, 25, 35, 45])
+        goals = np.array([0, 355, 0, 0])
         self.ctarget(goals, 300)
 
-        goals = np.array([34, 10, 70, -100])
+        goals = np.array([0, 0, 0, 0])
         self.ctarget(goals, 200)
 
     def objectives(self):
         while True:
-            obj_number = np.random.randint(low=2, high=110, size=1)
+            obj_number = np.random.randint(low=5, high=40, size=1)
             self.points = []
             cont = 0
             while cont < obj_number:
-                rands = np.random.randn(3)*50
-                #print(rands)
-                value = abs(rands[0]) + abs(rands[1]) + abs(rands[2])
-                if(value <= 55.6 and rands[2] >= 0):
-                    self.points.append(rands)
-                    cont = cont + 1
+                rands = [random.uniform(-55.6, 55.6) for i in range(3)]
+                if rands[2] >= 0:
+                    if abs(rands[0]) >= abs(rands[1]):
+                        value = math.sqrt(rands[0]**2 + rands[2]**2)
+                    else:
+                        value = math.sqrt(rands[1]**2 + rands[2]**2)
+                    if value <= 55.6:
+                        self.points.append(rands)
+                        cont = cont + 1
             self.points = pd.DataFrame(self.points)
             self.points.rename(columns = {0:'x', 1:'y', 2:'z'}, inplace=True)
             print(self.points)
             self.plotpoints = True
-            break
             while True:
-                time.sleep(0.1)
+                for p in range(int(obj_number)):
+                    validation_test = []
+                    for a in range(3):
+                        if(math.isclose(self.df.iat[3, a], self.points.iat[p, a],\
+                                        abs_tol=1e-1)):
+                            validation_test.append(True)
+                        else:
+                            validation_test.append(False)
+                    if all(validation_test):
+                        self.points.drop(p)
+                time.sleep(0.02)
 
     def fk(self, mode):
         ''' Forward Kinematics
@@ -108,7 +123,7 @@ class ArmRL(threading.Thread):
             df = df.append(df2).reset_index(drop=True)
             df.rename(columns = {0:'x', 1:'y', 2:'z'}, inplace=True)
             self.df = df
-            time.sleep(0.01)
+            time.sleep(0.1)
 
     def ctarget(self, targ, iterations):
         self.stop = False
@@ -119,14 +134,14 @@ class ArmRL(threading.Thread):
         while True:
             if self.stop == True:
                 break
-            time.sleep(0.01)
+            time.sleep(0.1)
 
     def dataFlow(self, targ, iterations):
         track = np.linspace(self.goals, targ, num=iterations)
         for t in track:
             self.goals = t
             #print(t)
-            time.sleep(0.03)
+            time.sleep(0.1)
         self.stop = True
 
 arm = ArmRL()
@@ -153,6 +168,6 @@ def animate(i):
     ax.set_ylim([-60, 60])
     ax.set_zlim([0, 60])
 
-ani = animation.FuncAnimation(fig, animate, interval=10)
+ani = FuncAnimation(fig, animate, interval=1)
 arm.start()
 plt.show()
