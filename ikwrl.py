@@ -58,18 +58,21 @@ class ArmRL(threading.Thread):
 
     def objectives(self):
         while True:
-            obj_number = np.random.randint(low=2, high=11, size=1)
-            print(obj_number)
+            obj_number = np.random.randint(low=2, high=110, size=1)
             self.points = []
             cont = 0
             while cont < obj_number:
                 rands = np.random.randn(3)*50
-                print(rands)
+                #print(rands)
                 value = abs(rands[0]) + abs(rands[1]) + abs(rands[2])
                 if(value <= 55.6 and rands[2] >= 0):
                     self.points.append(rands)
                     cont = cont + 1
+            self.points = pd.DataFrame(self.points)
+            self.points.rename(columns = {0:'x', 1:'y', 2:'z'}, inplace=True)
+            print(self.points)
             self.plotpoints = True
+            break
             while True:
                 time.sleep(0.1)
 
@@ -139,10 +142,8 @@ def animate(i):
     ax.scatter(0, 0, plotnonfinite=True, s=155000, norm=1, alpha=0.2, lw=0)
 
     if arm.plotpoints == True:
-        cont = 0
-        for p in arm.points:
-            cont = cont + 1
-            ax.scatter3D(p[0], p[1], p[2], color='green', label='Objective: {}'.format(cont))
+        x, y, z = [np.array(i) for i in [arm.points.x, arm.points.y, arm.points.z]]
+        ax.scatter3D(x, y, z, color='green', label='Objectives')
 
     ax.legend(loc=2, prop={'size':10})
     ax.set_xlabel('x')
@@ -152,6 +153,6 @@ def animate(i):
     ax.set_ylim([-60, 60])
     ax.set_zlim([0, 60])
 
-ani = animation.FuncAnimation(fig, animate, interval=1)
+ani = animation.FuncAnimation(fig, animate, interval=10)
 arm.start()
 plt.show()
