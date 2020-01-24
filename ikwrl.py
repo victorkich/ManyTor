@@ -1,3 +1,7 @@
+# Author: Victor Kich
+# Github: https://github.com/victorkich
+# E-mail: victorkich@yahoo.com.br
+
 from matplotlib import pyplot as plt
 from mpl_toolkits import mplot3d
 from matplotlib.animation import FuncAnimation
@@ -63,6 +67,7 @@ class ArmRL(threading.Thread):
         while True:
             obj_number = np.random.randint(low=5, high=40, size=1)
             self.points = []
+            self.points.append([51.3, 0, 0])
             cont = 0
             while cont < obj_number:
                 rands = [random.uniform(-55.6, 55.6) for i in range(3)]
@@ -83,13 +88,13 @@ class ArmRL(threading.Thread):
                     validation_test = []
                     for a in range(3):
                         if(math.isclose(self.df.iat[3, a], self.points.iat[p, a],\
-                                        abs_tol=1e-1)):
+                                        abs_tol=0.5)):
                             validation_test.append(True)
                         else:
                             validation_test.append(False)
                     if all(validation_test):
-                        self.points.drop(p)
-                time.sleep(0.02)
+                        self.points.drop(p, inplace=True)
+                time.sleep(0.01)
 
     def fk(self, mode):
         ''' Forward Kinematics
@@ -154,7 +159,7 @@ def animate(i):
     ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
     ax.scatter3D(x, y, z, color='black', label='Joints')
     ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
-    ax.scatter(0, 0, plotnonfinite=True, s=155000, norm=1, alpha=0.2, lw=0)
+    ax.scatter3D(0, 0, 4.3, plotnonfinite=True, s=155000, norm=1, alpha=0.2, lw=0)
 
     if arm.plotpoints == True:
         x, y, z = [np.array(i) for i in [arm.points.x, arm.points.y, arm.points.z]]
