@@ -49,11 +49,13 @@ class ArmRL(threading.Thread):
         self.goals = np.array([0.0 for i in range(4)])
         self.plotpoints = False
         self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
+        self.obj_number = 0
 
     def run(self):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
         rt.setDaemon(True)
         rt.start()
+
         obj = threading.Thread(name = 'objectives', target = self.objectives)
         obj.setDaemon(True)
         obj.start()
@@ -63,11 +65,11 @@ class ArmRL(threading.Thread):
 
     def objectives(self):
         while True:
-            obj_number = np.random.randint(low=5, high=40, size=1)
+            self.obj_number = np.random.randint(low=5, high=40, size=1)
             self.points = []
             self.points.append([51.3, 0, 0])
             cont = 0
-            while cont < obj_number:
+            while cont < self.obj_number:
                 rands = [random.uniform(-51.3, 51.3) for i in range(3)]
                 if rands[2] >= 0:
                     value = math.sqrt(math.sqrt(rands[0]**2 + rands[1]**2)**2 + rands[2]**2)
@@ -79,7 +81,7 @@ class ArmRL(threading.Thread):
             print(self.points)
             self.plotpoints = True
             while True:
-                for p in range(int(obj_number)):
+                for p in range(int(self.obj_number)):
                     validation_test = []
                     for a in range(3):
                         if(math.isclose(self.df.iat[3, a], self.points.iat[p, a],\
@@ -125,6 +127,14 @@ class ArmRL(threading.Thread):
             self.df = df
             self.trajectory = self.trajectory.append(self.df.iloc[3])
             self.trajectory.drop_duplicates(inplace=True)
+
+            distance = pd.DataFrame({'obj_dist':[]})
+            for p in range(int(self.obj_number)):
+                x, y, z = [(abs(self.df.iloc[3, i] - self.points.iloc[p, i]))\
+                           for i in range(3)]
+                dist = pd.DataFrame({'obj_dist':[math.sqrt(math.sqrt(x**2 + y**2)**2 + z**2)]})
+                distance = distance.append(dist).reset_index(drop=True)
+            print(distance)
             time.sleep(0.1)
 
     def ctarget(self, targ, iterations):
