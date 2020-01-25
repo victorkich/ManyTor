@@ -1,4 +1,4 @@
-# Author: Victor Kich
+# Author: Victor Augusto Kich
 # Github: https://github.com/victorkich
 # E-mail: victorkich@yahoo.com.br
 
@@ -48,6 +48,7 @@ class ArmRL(threading.Thread):
         self.zeros = np.array([210.0, 180.0, 65.0, 153.0])
         self.goals = np.array([0.0 for i in range(4)])
         self.plotpoints = False
+        self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
 
     def run(self):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
@@ -57,11 +58,8 @@ class ArmRL(threading.Thread):
         obj.setDaemon(True)
         obj.start()
 
-        goals = np.array([0, 355, 0, 0])
-        self.ctarget(goals, 300)
-
-        goals = np.array([0, 0, 0, 0])
-        self.ctarget(goals, 200)
+        goals = np.array([-50, 50, 150, -60])
+        self.ctarget(goals, 250)
 
     def objectives(self):
         while True:
@@ -70,13 +68,10 @@ class ArmRL(threading.Thread):
             self.points.append([51.3, 0, 0])
             cont = 0
             while cont < obj_number:
-                rands = [random.uniform(-55.6, 55.6) for i in range(3)]
+                rands = [random.uniform(-51.3, 51.3) for i in range(3)]
                 if rands[2] >= 0:
-                    if abs(rands[0]) >= abs(rands[1]):
-                        value = math.sqrt(rands[0]**2 + rands[2]**2)
-                    else:
-                        value = math.sqrt(rands[1]**2 + rands[2]**2)
-                    if value <= 55.6:
+                    value = math.sqrt(math.sqrt(rands[0]**2 + rands[1]**2)**2 + rands[2]**2)
+                    if value <= 51.3:
                         self.points.append(rands)
                         cont = cont + 1
             self.points = pd.DataFrame(self.points)
@@ -128,11 +123,13 @@ class ArmRL(threading.Thread):
             df = df.append(df2).reset_index(drop=True)
             df.rename(columns = {0:'x', 1:'y', 2:'z'}, inplace=True)
             self.df = df
+            self.trajectory = self.trajectory.append(self.df.iloc[3])
+            self.trajectory.drop_duplicates(inplace=True)
             time.sleep(0.1)
 
     def ctarget(self, targ, iterations):
         self.stop = False
-        dtf = threading.Thread(name = 'teste',target = self.dataFlow,\
+        dtf = threading.Thread(name = 'dataflow',target = self.dataFlow,\
                                args = (targ, iterations, ))
         dtf.setDaemon(True)
         dtf.start()
@@ -145,7 +142,6 @@ class ArmRL(threading.Thread):
         track = np.linspace(self.goals, targ, num=iterations)
         for t in track:
             self.goals = t
-            #print(t)
             time.sleep(0.1)
         self.stop = True
 
@@ -159,7 +155,9 @@ def animate(i):
     ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
     ax.scatter3D(x, y, z, color='black', label='Joints')
     ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
-    ax.scatter3D(0, 0, 4.3, plotnonfinite=True, s=155000, norm=1, alpha=0.2, lw=0)
+    ax.scatter3D(0, 0, 4.3, plotnonfinite=True, s=135000, norm=1, alpha=0.2, lw=0)
+    x, y, z = [np.array(i) for i in [arm.trajectory.x, arm.trajectory.y, arm.trajectory.z]]
+    ax.plot3D(x, y, z, c='b', label='Trajectory')
 
     if arm.plotpoints == True:
         x, y, z = [np.array(i) for i in [arm.points.x, arm.points.y, arm.points.z]]
