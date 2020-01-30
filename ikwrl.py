@@ -12,9 +12,104 @@ import time
 import threading
 import random
 
+import tensorflow as tf
+from datetime import datetime
+from collections import deque
+import sys
+
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
+
+def cnn(x):
+    ''' Convolutional neural network
+    '''
+    x = tf.layers.conv2d(x, filters=16, kernel_size=8, strides=4, padding='valid', activation='relu')
+    x = tf.layers.conv2d(x, filters=32, kernel_size=4, strides=2, padding='valid', activation='relu')
+    x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=1, padding='valid', activation='relu')
+
+def fnn(x, hidden_layers, output_layers, activation=tf.nn.relu, last_activation=None):
+    ''' Feed-forward neural network
+    '''
+    for l in hidden_layers:
+        x = tf.layers.dense(x, units=1, activation=activation)
+    return tf.layers.dense(x, units=output_layers, activation=last_activation)
+
+def qnet(x, hidden_layers, output_layers, output_size, fnn_activation=tf.nn.relu, last_activation=None):
+    ''' Deep Q network: CNN followed by FNN
+    '''
+    x = cnn(x)
+    x = tf.layers.flatten(x)
+    return fnn(x, hidden_layers, output_layers, fnn_activation, last_activation)
+
+class ExperienceBuffer():
+    ''' Experience Replay Buffer
+    '''
+    def __init__(self, buffer_size):
+        self.obs_buf = deque(maxlen=buffer_size)
+        self.rew_buf = deque(maxlen=buffer_size)
+        self.act_buf = deque(maxlen=buffer_size)
+        self.obs2_buf = deque(maxlen=buffer_size)
+        self.done_buf = deque(maxlen=buffer_size)
+
+    def add(self, obs, rew, act, obs2, done):
+        self.obs_buf.append(obs)
+        self.rew_buf.append(rew)
+        self.act_buf.append(act)
+        self.obs2_buf.append(obs2)
+        self.done_buf.append(done)
+
+    def sample_minibatch(self, batch_size):
+        mb_indices = np.random.randint(len(self.obs_buf), size=batch_size)
+
+        mb_obs = scale_frames([self.obs_buf[i] for i in mb_indices])
+        mb_rew = [self.rew_buf[i] for i in mb_indices]
+        mb_act = [self.act_buf[i] for i in mb_indices]
+        mb_obs2 = scale_frames([self.obs2_buf[i] for i in mb_indices])
+        mb_done = [self.done_buf[i] for i in mb_indices]
+
+        return mb_obs, mb_rew, mb_act, mb_obs2, mb_done
+
+    def __len__(self):
+        return len(self.obs_buf)
+
+def q_target_values(mini_batch_rw, mini_batch_done, av, discounted_value):
+    ''' Calculate the target value y for each transition
+    '''
+    max_av = np.max(av, axis=1)
+
+    ys = []
+    for r, d, av in zip(mini_batch_rw, mini_batch_done, max_av):
+        if d:
+            ys.append(r)
+        else:
+            q_step = r + discounted_value * av
+            ys.append(q_step)
+
+    assert len(ys) == len(mini_batch_rw)
+    return ys
+
+def greedy(action_values):
+    ''' Greedy policy
+    '''
+    return np.argmax(action_values)
+
+def eps_greedy(action_values, eps=0.1):
+    ''' Eps-greedy policy
+    '''
+    if np.random.uniform(0,1) < eps:
+        # Choose a uniform random action
+        return np.random.randint(len(action_values))
+    else:
+        # Choose the greedy action
+        return np.argmax(action_values)
+
+def scale_frames(frames):
+    ''' Scale the frame with number between 0 and 1
+    '''
+    return np.array(frames, dtype=np.float32) / 255.0
+
+#-------------------------------------------------------------------------------
 
 def deg2rad(deg):
     ''' Convert angles from degress to radians
