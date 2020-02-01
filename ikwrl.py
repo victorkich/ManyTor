@@ -11,103 +11,53 @@ import pandas as pd
 import time
 import threading
 import random
-
 import tensorflow as tf
 from datetime import datetime
-from collections import deque
-import sys
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 500)
 pd.set_option('display.width', 1000)
 
-def cnn(x):
-    ''' Convolutional neural network
-    '''
-    x = tf.layers.conv2d(x, filters=16, kernel_size=8, strides=4, padding='valid', activation='relu')
-    x = tf.layers.conv2d(x, filters=32, kernel_size=4, strides=2, padding='valid', activation='relu')
-    x = tf.layers.conv2d(x, filters=16, kernel_size=3, strides=1, padding='valid', activation='relu')
-
-def fnn(x, hidden_layers, output_layers, activation=tf.nn.relu, last_activation=None):
-    ''' Feed-forward neural network
+def mlp(x, hidden_layers, output_layer, activation=tf.tanh, last_activation=None):
+    ''' Multi-layer perceptron
     '''
     for l in hidden_layers:
-        x = tf.layers.dense(x, units=1, activation=activation)
-    return tf.layers.dense(x, units=output_layers, activation=last_activation)
+        x = tf.layers.dense(x, units=l, activation=activation)
+    return tf.layers.dense(x, units=output_layer, activation=last_activation)
 
-def qnet(x, hidden_layers, output_layers, output_size, fnn_activation=tf.nn.relu, last_activation=None):
-    ''' Deep Q network: CNN followed by FNN
+def softmax_entropy(logits):
+    ''' Softmax Entropy
     '''
-    x = cnn(x)
-    x = tf.layers.flatten(x)
-    return fnn(x, hidden_layers, output_layers, fnn_activation, last_activation)
+    return -tf.reduce_sum(tf.nn.softmax(logits, axis=-1) * tf.nn.log_softmax(logits, axis=-1), axis=-1)
 
-class ExperienceBuffer():
-    ''' Experience Replay Buffer
+def clipped_surrogate_obj(new_p, old_p, adv, eps):
+    ''' Clipped surrogate objective function
     '''
-    def __init__(self, buffer_size):
-        self.obs_buf = deque(maxlen=buffer_size)
-        self.rew_buf = deque(maxlen=buffer_size)
-        self.act_buf = deque(maxlen=buffer_size)
-        self.obs2_buf = deque(maxlen=buffer_size)
-        self.done_buf = deque(maxlen=buffer_size)
+    rt = tf.exp(new_p - old_p) # i.e. pi / old_pi
+    return -tf.reduce_mean(tf.minimum(rt*adv, tf.clip_by_value(rt, 1-eps, 1+eps)*adv))
 
-    def add(self, obs, rew, act, obs2, done):
-        self.obs_buf.append(obs)
-        self.rew_buf.append(rew)
-        self.act_buf.append(act)
-        self.obs2_buf.append(obs2)
-        self.done_buf.append(done)
-
-    def sample_minibatch(self, batch_size):
-        mb_indices = np.random.randint(len(self.obs_buf), size=batch_size)
-
-        mb_obs = scale_frames([self.obs_buf[i] for i in mb_indices])
-        mb_rew = [self.rew_buf[i] for i in mb_indices]
-        mb_act = [self.act_buf[i] for i in mb_indices]
-        mb_obs2 = scale_frames([self.obs2_buf[i] for i in mb_indices])
-        mb_done = [self.done_buf[i] for i in mb_indices]
-
-        return mb_obs, mb_rew, mb_act, mb_obs2, mb_done
-
-    def __len__(self):
-        return len(self.obs_buf)
-
-def q_target_values(mini_batch_rw, mini_batch_done, av, discounted_value):
-    ''' Calculate the target value y for each transition
+def GAE(rews, v, v_last, gamma=0.99, lam=0.95):
+    ''' Generalized Advantage Estimation
     '''
-    max_av = np.max(av, axis=1)
+    assert len(rews) == len(v)
+    vs = np.append(v, v_last)
+    delta = np.array(rews) + gamma*vs[1:] - vs[:-1]
+    gae_advantage = discounted_rewards(delta, 0, gamma*lam)
+    return gae_advantage
 
-    ys = []
-    for r, d, av in zip(mini_batch_rw, mini_batch_done, max_av):
-        if d:
-            ys.append(r)
-        else:
-            q_step = r + discounted_value * av
-            ys.append(q_step)
-
-    assert len(ys) == len(mini_batch_rw)
-    return ys
-
-def greedy(action_values):
-    ''' Greedy policy
+def discounted_rewards(rews, last_sv, gamma):
+    ''' Discounted reward to go
+        Parameters:
+        ----------
+        rews: list of rewards
+        last_sv: value of the last state
+        gamma: discount value
     '''
-    return np.argmax(action_values)
-
-def eps_greedy(action_values, eps=0.1):
-    ''' Eps-greedy policy
-    '''
-    if np.random.uniform(0,1) < eps:
-        # Choose a uniform random action
-        return np.random.randint(len(action_values))
-    else:
-        # Choose the greedy action
-        return np.argmax(action_values)
-
-def scale_frames(frames):
-    ''' Scale the frame with number between 0 and 1
-    '''
-    return np.array(frames, dtype=np.float32) / 255.0
+    rtg = np.zeros_like(rews, dtype=np.float32)
+    rtg[-1] = rews[-1] + gamma*last_sv
+    for i in reversed(range(len(rews)-1)):
+        rtg[i] = rews[i] + gamma*rtg[i+1]
+    return rtg
 
 #-------------------------------------------------------------------------------
 
@@ -260,7 +210,7 @@ def animate(i):
     ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
     ax.scatter3D(x, y, z, color='black', label='Joints')
     ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
-    ax.scatter3D(0, 0, 4.3, plotnonfinite=True, s=135000, norm=1, alpha=0.2, lw=0)
+    ax.scatter3D(0, 0, 4.3, plotnonfinite=False, s=135000, norm=1, alpha=0.2, lw=0)
     x, y, z = [np.array(i) for i in [arm.trajectory.x, arm.trajectory.y, arm.trajectory.z]]
     ax.plot3D(x, y, z, c='b', label='Trajectory')
 
