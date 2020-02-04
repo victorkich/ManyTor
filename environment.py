@@ -28,6 +28,8 @@ class arm(threading.Thread):
         self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
         self.obj_number = 0
         self.ax = plt.gca(projection='3d')
+        self.reset = False
+        self.done = False
 
     def run(self):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
@@ -47,6 +49,9 @@ class arm(threading.Thread):
 
         goals = np.array([-50, 50, 150, -60])
         self.ctarget(goals, 250)
+
+    def reset(self):
+        self.reset = True
 
     def animate(self, i):
         x, y, z = [np.array(i) for i in [self.df.x, self.df.y, self.df.z]]
@@ -72,6 +77,8 @@ class arm(threading.Thread):
 
     def objectives(self):
         while True:
+            self.done = False
+            self.reset = False
             self.obj_number = np.random.randint(low=5, high=25, size=1)
             self.points = []
             self.points.append([51.3, 0, 0])
@@ -87,7 +94,7 @@ class arm(threading.Thread):
             self.points.rename(columns = {0:'x', 1:'y', 2:'z'}, inplace=True)
             print(self.points)
             self.plotpoints = True
-            while True:
+            while not self.points.empty:
                 for p in range(int(self.obj_number)):
                     validation_test = []
                     for a in range(3):
@@ -99,6 +106,9 @@ class arm(threading.Thread):
                     if all(validation_test):
                         self.points.drop(p, inplace=True)
                 time.sleep(0.01)
+            self.done = True
+            while self.reset == False:
+                time.sleep(0.5)
 
     def realtime(self):
         while True:
