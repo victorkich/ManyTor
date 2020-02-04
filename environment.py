@@ -13,7 +13,13 @@ import random
 import math
 import fkmath as fkm
 
-class envi(threading.Thread):
+fig = plt.figure()
+
+def showPlot(arm):
+    ani = FuncAnimation(fig, arm.animate, interval=1)
+    plt.show()
+
+class arm(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
         self.zeros = np.array([210.0, 180.0, 65.0, 153.0])
@@ -21,6 +27,7 @@ class envi(threading.Thread):
         self.plotpoints = False
         self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
         self.obj_number = 0
+        self.ax = plt.gca(projection='3d')
 
     def run(self):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
@@ -40,6 +47,28 @@ class envi(threading.Thread):
 
         goals = np.array([-50, 50, 150, -60])
         self.ctarget(goals, 250)
+
+    def animate(self, i):
+        x, y, z = [np.array(i) for i in [self.df.x, self.df.y, self.df.z]]
+        self.ax.clear()
+        self.ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
+        self.ax.scatter3D(x, y, z, color='black', label='Joints')
+        self.ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
+        self.ax.scatter3D(0, 0, 4.3, plotnonfinite=False, s=135000, norm=1, alpha=0.2, lw=0)
+        x, y, z = [np.array(i) for i in [self.trajectory.x, self.trajectory.y, self.trajectory.z]]
+        self.ax.plot3D(x, y, z, c='b', label='Trajectory')
+
+        if self.plotpoints == True:
+            x, y, z = [np.array(i) for i in [self.points.x, self.points.y, self.points.z]]
+            self.ax.scatter3D(x, y, z, color='green', label='Objectives')
+
+        self.ax.legend(loc=2, prop={'size':10})
+        self.ax.set_xlabel('x')
+        self.ax.set_ylabel('y')
+        self.ax.set_zlabel('z')
+        self.ax.set_xlim([-60, 60])
+        self.ax.set_ylim([-60, 60])
+        self.ax.set_zlim([0, 60])
 
     def objectives(self):
         while True:
@@ -82,7 +111,7 @@ class envi(threading.Thread):
             self.df = pd.DataFrame(df)
             self.trajectory = self.trajectory.append(self.df.iloc[3])
             self.trajectory.drop_duplicates(inplace=True)
-            time.sleep(0.1)
+            time.sleep(0.2)
 
     def distanced(self):
         while True:
@@ -112,33 +141,3 @@ class envi(threading.Thread):
             self.goals = t
             time.sleep(0.1)
         self.stop = True
-
-arm = envi()
-arm.start()
-
-def animate(i):
-    x, y, z = [np.array(i) for i in [arm.df.x, arm.df.y, arm.df.z]]
-    ax.clear()
-    ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
-    ax.scatter3D(x, y, z, color='black', label='Joints')
-    ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
-    ax.scatter3D(0, 0, 4.3, plotnonfinite=False, s=135000, norm=1, alpha=0.2, lw=0)
-    x, y, z = [np.array(i) for i in [arm.trajectory.x, arm.trajectory.y, arm.trajectory.z]]
-    ax.plot3D(x, y, z, c='b', label='Trajectory')
-
-    if arm.plotpoints == True:
-        x, y, z = [np.array(i) for i in [arm.points.x, arm.points.y, arm.points.z]]
-        ax.scatter3D(x, y, z, color='green', label='Objectives')
-
-    ax.legend(loc=2, prop={'size':10})
-    ax.set_xlabel('x')
-    ax.set_ylabel('y')
-    ax.set_zlabel('z')
-    ax.set_xlim([-60, 60])
-    ax.set_ylim([-60, 60])
-    ax.set_zlim([0, 60])
-
-fig = plt.figure()
-ax = plt.gca(projection='3d')
-ani = FuncAnimation(fig, animate, interval=1)
-plt.show()
