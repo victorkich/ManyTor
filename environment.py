@@ -47,8 +47,8 @@ class arm(threading.Thread):
         dis.start()
         time.sleep(1.0)
 
-        goals = np.array([-50, 50, 150, -60])
-        self.ctarget(goals, 250)
+        #goals = np.array([-50, 50, 150, -60])
+        #self.ctarget(goals, 250)
 
     def reset(self):
         self.reset = True

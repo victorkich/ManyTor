@@ -6,6 +6,7 @@ import numpy as np
 import tensorflow as tf
 from datetime import datetime
 import environment
+import threading
 
 def mlp(x, hidden_layers, output_layer, activation=tf.tanh, last_activation=None):
     ''' Multi-layer perceptron
@@ -161,3 +162,9 @@ if __name__ == '__main__':
     env = environment.arm()
     env.start()
     environment.showPlot(env)
+
+    '''
+    PPO(hidden_sizes=[64,64], cr_lr=5e-4, ac_lr=2e-4, gamma=0.99, lam=0.95,\
+        steps_per_env=5000, number_envs=1, eps=0.15, actor_iter=6,\
+        critic_iter=10, action_type='Box', num_epochs=5000, minibatch_size=256)
+    '''
