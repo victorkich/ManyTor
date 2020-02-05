@@ -92,7 +92,7 @@ class Buffer():
         return len(self.ob)
 
 def PPO(hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=50, \
-        minibatch_size=5000, gamma=0.99, lam=0.95, number_envs=1, eps=0.1, \
+        minibatch_size=5000, gamma=0.99, lam=0.95, eps=0.1, \
         actor_iter=5, critic_iter=10, steps_per_env=100, action_type='Discrete'):
 
     # Placeholders
@@ -160,11 +160,11 @@ def PPO(hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=50, \
 
 if __name__ == '__main__':
     env = environment.arm()
+    ppo = threading.Thread(name = 'PPO', target = PPO, args = \
+          (hidden_sizes=[64,64], cr_lr=5e-4, ac_lr=2e-4, gamma=0.99, lam=0.95,\
+          steps_per_env=5000, eps=0.15, actor_iter=6, critic_iter=10,\
+          action_type='Box', num_epochs=5000, minibatch_size=256))
+    ppo.setDaemon(True)
     env.start()
+    #ppo.start()
     environment.showPlot(env)
-
-    '''
-    PPO(hidden_sizes=[64,64], cr_lr=5e-4, ac_lr=2e-4, gamma=0.99, lam=0.95,\
-        steps_per_env=5000, number_envs=1, eps=0.15, actor_iter=6,\
-        critic_iter=10, action_type='Box', num_epochs=5000, minibatch_size=256)
-    '''
