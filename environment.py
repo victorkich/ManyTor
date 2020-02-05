@@ -50,6 +50,15 @@ class arm(threading.Thread):
         #goals = np.array([-50, 50, 150, -60])
         #self.ctarget(goals, 250)
 
+    def n_obs():
+        return trajectory
+
+    def get_episode_reward():
+        return pass
+
+    def get_episode_length():
+        return pass
+
     def reset(self):
         self.reset = True
 
