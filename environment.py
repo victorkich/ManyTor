@@ -31,7 +31,7 @@ class arm(threading.Thread):
         self.ax = plt.gca(projection='3d')
         self.reset = False
         self.done = False
-        self.n_obs = 4
+        self.n_obs = [0,0,0,0]
 
     def run(self):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
@@ -49,17 +49,18 @@ class arm(threading.Thread):
         dis.start()
         time.sleep(1.0)
 
-        #goals = np.array([-50, 50, 150, -60])
-        #self.ctarget(goals, 250)
+    def step(self, act):
+        goals = np.array(act)
+        self.ctarget(goals, 10)
+        rew = self.get_episode_reward()
+        obs2 = act
+        return obs2, rew, self.done
 
-    #def n_obs():
-    #    return trajectory
-
-    def get_episode_reward():
+    def get_episode_reward(self):
         reward = (self.obj_number-self.obj_remaining)/self.obj_number
         return reward
 
-    def get_episode_length():
+    def get_episode_length(self):
         return self.obj_number
 
     def reset(self):
@@ -146,7 +147,8 @@ class arm(threading.Thread):
                             for i in range(3)]
                 dist = pd.DataFrame({'obj_dist':[math.sqrt(math.sqrt(x**2 + y**2)**2 + z**2)]})
                 distance = distance.append(dist).reset_index(drop=True)
-            print(distance)
+            self.distance = np.squeeze(distance.T.values)
+            print(self.distance)
             time.sleep(0.1)
 
     def ctarget(self, targ, iterations):

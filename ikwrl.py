@@ -101,13 +101,14 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
     act_dim = 4
     obs_dim = 4
     low_action_space = 0
-    high_action_space = 110
+    high_action_space = 105
     act_ph = tf.compat.v1.placeholder(shape=(None, act_dim), dtype=tf.float32, name='act')
     obs_ph = tf.compat.v1.placeholder(shape=(1, obs_dim), dtype=tf.float32, name='obs')
     ret_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='ret')
     adv_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='adv')
     old_p_log_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='old_p_log')
 
+    # Computational graph for the policy of a continuous action space
     with tf.compat.v1.variable_scope('actor_nn'):
         p_logits = mlp(obs_ph, hidden_sizes, act_dim, tf.tanh, last_activation=tf.tanh)
         log_std = tf.compat.v1.get_variable(name='log_std', initializer=np.zeros(act_dim, dtype=np.float32)-0.5)
@@ -117,6 +118,7 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
         p_noisy = p_logits + tf.random.normal(tf.shape(p_logits), 0, 1) * tf.exp(log_std)
         # CLip the noisy actions
         act_smp = tf.clip_by_value(p_noisy, low_action_space, high_action_space)
+
         # Compute the gaussian log likelihood
         p_log = gaussian_log_likelihood(act_ph, p_logits, log_std)
 
@@ -161,20 +163,22 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
 
         for _ in range(steps_per_env):
             # Iterate over a fixed number of steps
+            print("                     -=============- ", step_count, " -=============-")
             act, val = sess.run([act_smp, s_values], feed_dict={obs_ph:[env.n_obs]})
             act = np.squeeze(act)
+            print(act)
 
             # Take a step in the environment
-            obs2, rew, done, _ = [1,3,4]
+            obs2, rew, done = env.step(act)
+            print("Reward: ", rew)
 
             # Add the new transition to the temporary buffer
             temp_buf.append([env.n_obs.copy(), rew, act, np.squeeze(val)])
 
             env.n_obs = obs2.copy()
             step_count += 1
-            print(step_count)
 
-            if env.done:
+            if done:
                 # Store the full trajectory in the buffer
                 # (the value of the last state is 0 as the trajectory is completed)
                 buffer.store(np.array(temp_buf), 0)
