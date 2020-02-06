@@ -50,8 +50,8 @@ class arm(threading.Thread):
         time.sleep(1.0)
 
     def step(self, act):
-        goals = np.array(act)
-        self.ctarget(goals, 10)
+        goals = np.array([fkm.angleNormalize(act[i]) for i in range(4)])
+        self.ctarget(goals, 75)
         rew = self.get_episode_reward()
         obs2 = act
         return obs2, rew, self.done

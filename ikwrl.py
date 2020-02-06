@@ -7,6 +7,7 @@ import tensorflow as tf
 from datetime import datetime
 import environment
 import threading
+import fkmath as fkm
 
 tf.compat.v1.disable_eager_execution()
 
@@ -166,7 +167,7 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
             print("                     -=============- ", step_count, " -=============-")
             act, val = sess.run([act_smp, s_values], feed_dict={obs_ph:[env.n_obs]})
             act = np.squeeze(act)
-            print(act)
+            print([fkm.angleNormalize(act[i]) for i in range(4)])
 
             # Take a step in the environment
             obs2, rew, done = env.step(act)
@@ -192,9 +193,9 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
                 # Reset the environment
                 env.reset()
 
-            # Bootstrap with the estimated state value of the next state!
-            last_v = sess.run(s_values, feed_dict={obs_ph:[env.n_obs]})
-            buffer.store(np.array(temp_buf), np.squeeze(last_v))
+        # Bootstrap with the estimated state value of the next state!
+        last_v = sess.run(s_values, feed_dict={obs_ph:[env.n_obs]})
+        buffer.store(np.array(temp_buf), np.squeeze(last_v))
 
         # Gather the entire batch from the buffer
         # NB: all the batch is used and deleted after the optimization.

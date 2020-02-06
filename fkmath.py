@@ -48,3 +48,7 @@ def fk(mode, goals):
     for h in hs:
         m = m.dot(h)
     return m
+
+def angleNormalize(angle):
+    normalized_angle = (angle*120) - 120
+    return normalized_angle
