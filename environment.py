@@ -79,7 +79,8 @@ class arm(threading.Thread):
 
         if self.plotpoints == True:
             x, y, z = [np.array(i) for i in [self.points.x, self.points.y, self.points.z]]
-            self.ax.scatter3D(x, y, z, color='green', label='Objectives')
+            legend = 'Objectives: ' + str(self.obj_remaining[0]) + '/' + str(self.obj_number[0])
+            self.ax.scatter3D(x, y, z, color='green', label=legend)
 
         self.ax.legend(loc=2, prop={'size':10})
         self.ax.set_xlabel('x')
