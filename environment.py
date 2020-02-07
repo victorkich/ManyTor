@@ -58,7 +58,15 @@ class arm(threading.Thread):
         return obs2, rew, self.done
 
     def get_episode_reward(self):
-        reward = (self.obj_number-self.obj_remaining)/self.obj_number
+        fixed_reward = (self.obj_number-self.obj_remaining)/self.obj_number
+        threshold = 30
+        weight = self.obj_number/threshold
+        variable_reward = []
+        for i in range(int(self.obj_number)):
+            if((self.distance[i] <= threshold) and self.distance[i] != 0):
+                variable_reward.append(weight/self.distance[i])
+        variable_reward = sum(variable_reward)
+        reward = fixed_reward + variable_reward
         return reward
 
     def get_episode_length(self):
@@ -94,7 +102,7 @@ class arm(threading.Thread):
         while True:
             self.done = False
             self.reset = False
-            self.obj_number = np.random.randint(low=5, high=25, size=1)
+            self.obj_number = np.random.randint(low=5, high=10, size=1)
             self.obj_remaining = self.obj_number
             self.points = []
             self.points.append([51.3, 0, 0])
@@ -115,7 +123,7 @@ class arm(threading.Thread):
                     validation_test = []
                     for a in range(3):
                         if(math.isclose(self.df.iat[3, a], self.points.iat[p, a],\
-                                        abs_tol=0.5)):
+                                        abs_tol=0.75)):
                             validation_test.append(True)
                         else:
                             validation_test.append(False)
