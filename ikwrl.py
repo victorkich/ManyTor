@@ -104,7 +104,7 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
     low_action_space = 0
     high_action_space = 105
     act_ph = tf.compat.v1.placeholder(shape=(None, act_dim), dtype=tf.float32, name='act')
-    obs_ph = tf.compat.v1.placeholder(shape=(1, obs_dim), dtype=tf.float32, name='obs')
+    obs_ph = tf.compat.v1.placeholder(shape=(None, obs_dim), dtype=tf.float32, name='obs')
     ret_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='ret')
     adv_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='adv')
     old_p_log_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='old_p_log')
@@ -114,14 +114,14 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
         p_logits = mlp(obs_ph, hidden_sizes, act_dim, tf.tanh, last_activation=tf.tanh)
         log_std = tf.compat.v1.get_variable(name='log_std', initializer=np.zeros(act_dim, dtype=np.float32)-0.5)
 
-        # Add noise to the mean values predicted
-        # The noise is proportional to the standard deviation
-        p_noisy = p_logits + tf.random.normal(tf.shape(p_logits), 0, 1) * tf.exp(log_std)
-        # CLip the noisy actions
-        act_smp = tf.clip_by_value(p_noisy, low_action_space, high_action_space)
+    # Add noise to the mean values predicted
+    # The noise is proportional to the standard deviation
+    p_noisy = p_logits + tf.random.normal(tf.shape(p_logits), 0, 1) * tf.exp(log_std)
+    # CLip the noisy actions
+    act_smp = tf.clip_by_value(p_noisy, low_action_space, high_action_space)
 
-        # Compute the gaussian log likelihood
-        p_log = gaussian_log_likelihood(act_ph, p_logits, log_std)
+    # Compute the gaussian log likelihood
+    p_log = gaussian_log_likelihood(act_ph, p_logits, log_std)
 
     # Neural network value function approximizer
     with tf.compat.v1.variable_scope('critic_nn'):
@@ -148,8 +148,9 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
     # Initialize the variables
     sess.run(tf.compat.v1.global_variables_initializer())
 
-    # Variable to store the total number of steps
+    # Variables to store the total number of steps ahs epochs
     step_count = 0
+    epoch_count = 0
 
     print('Env batch size: ', steps_per_env)
 
@@ -161,23 +162,26 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
         batch_rew = []
         batch_len = []
         temp_buf = []
+        epoch_count += 1
 
         for _ in range(steps_per_env):
+            step_count += 1
+
             # Iterate over a fixed number of steps
-            print("                     -=============- ", step_count, " -=============-")
+            print("             -=============- Epoch: ", epoch_count,\
+                    " Step: ", step_count, " -=============-")
             act, val = sess.run([act_smp, s_values], feed_dict={obs_ph:[env.n_obs]})
             act = np.squeeze(act)
             print([fkm.angleNormalize(act[i]) for i in range(4)])
 
             # Take a step in the environment
-            obs2, rew, done = env.step(act)
+            obs2, rew, done = env.step(act, epoch_count, step_count)
             print("Reward: ", rew)
 
             # Add the new transition to the temporary buffer
             temp_buf.append([env.n_obs.copy(), rew, act, np.squeeze(val)])
 
             env.n_obs = obs2.copy()
-            step_count += 1
 
             if done:
                 # Store the full trajectory in the buffer
@@ -203,7 +207,7 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
         obs_batch, act_batch, adv_batch, rtg_batch = buffer.get_batch()
 
         old_p_log = sess.run(p_log, feed_dict={obs_ph:obs_batch, act_ph:act_batch,\
-                            adv_ph:adv_batch, ret_ph:rtg_batch})
+                             adv_ph:adv_batch, ret_ph:rtg_batch})
         old_p_batch = np.array(old_p_log)
 
         lb = len(buffer)
@@ -232,14 +236,16 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
         if len(batch_rew) > 0:
             print('Ep:%d Rew:%.2f -- Step:%d' % (ep, np.mean(batch_rew), step_count))
 
+        env.clear_tratectory()
+
 if __name__ == '__main__':
     env = environment.arm()
     env.start()
     # (env, hidden_sizes=[64,64], cr_lr=5e-4, ac_lr=2e-4, num_epochs=5000,
     # minibatch_size=256, gamma=0.99, lam=0.95, eps=0.15, actor_iter=6,
     # critic_iter=10, steps_per_env=5000)
-    ppo = threading.Thread(name = 'PPO', target = PPO, args = (env, [64,64],\
-                           5e-4, 2e-4, 5000, 256, 0.99, 0.95, 0.15, 6, 10, 5000))
+    ppo = threading.Thread(name = 'PPO', target = PPO, args = (env, [32],\
+                           5e-4, 2e-4, 5000, 256, 0.99, 0.95, 0.15, 6, 10, 100))
     ppo.setDaemon(True)
     ppo.start()
     environment.showPlot(env)

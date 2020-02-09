@@ -33,6 +33,8 @@ class arm(threading.Thread):
         self.reset = False
         self.done = False
         self.n_obs = [0,0,0,0]
+        self.actual_epoch = 0
+        self.actual_step = 0
 
     def run(self):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
@@ -50,7 +52,9 @@ class arm(threading.Thread):
         dis.start()
         time.sleep(1.0)
 
-    def step(self, act):
+    def step(self, act, actual_epoch, actual_step):
+        self.actual_epoch = actual_epoch
+        self.actual_step = actual_step
         goals = np.array([fkm.angleNormalize(act[i]) for i in range(4)])
         self.ctarget(goals, 75)
         rew = self.get_episode_reward()
@@ -75,6 +79,9 @@ class arm(threading.Thread):
     def reset(self):
         self.reset = True
 
+    def clear_tratectory(self):
+        self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
+
     def animate(self, i):
         x, y, z = [np.array(i) for i in [self.df.x, self.df.y, self.df.z]]
         self.ax.clear()
@@ -90,6 +97,8 @@ class arm(threading.Thread):
             legend = 'Objectives: ' + str(self.obj_remaining[0]) + '/' + str(self.obj_number[0])
             self.ax.scatter3D(x, y, z, color='green', label=legend)
 
+        title = 'Epoch: ' + str(self.actual_epoch) + ' Step: ' + str(self.actual_step)
+        self.ax.set_title(title)
         self.ax.legend(loc=2, prop={'size':10})
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
