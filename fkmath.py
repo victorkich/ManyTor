@@ -50,5 +50,8 @@ def fk(mode, goals):
     return m
 
 def angleNormalize(angle):
-    normalized_angle = (angle*120) - 120
+    if angle <= 0.5:
+        normalized_angle = 120*(angle/0.5) - 120
+    else:
+        normalized_angle = 120*angle
     return normalized_angle

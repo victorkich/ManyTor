@@ -152,8 +152,6 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
     step_count = 0
     epoch_count = 0
 
-    print('Env batch size: ', steps_per_env)
-
     for ep in range(num_epochs):
         # Create the buffer that will contain the trajectories (full or partial)
         # Run with the last policy
@@ -172,13 +170,12 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
                     " Step: ", step_count, " -=============-")
             act, val = sess.run([act_smp, s_values], feed_dict={obs_ph:[env.n_obs]})
             act = np.squeeze(act)
-            print([fkm.angleNormalize(act[i]) for i in range(4)])
 
             # Take a step in the environment
             obs2, rew, done = env.step(act, epoch_count, step_count)
             print("Reward: ", rew)
 
-            # Add the new transition to the temporary buffer
+            # Add the new transition to the temporary buffers
             temp_buf.append([env.n_obs.copy(), rew, act, np.squeeze(val)])
 
             env.n_obs = obs2.copy()
@@ -244,8 +241,8 @@ if __name__ == '__main__':
     # (env, hidden_sizes=[64,64], cr_lr=5e-4, ac_lr=2e-4, num_epochs=5000,
     # minibatch_size=256, gamma=0.99, lam=0.95, eps=0.15, actor_iter=6,
     # critic_iter=10, steps_per_env=5000)
-    ppo = threading.Thread(name = 'PPO', target = PPO, args = (env, [32],\
-                           5e-4, 2e-4, 5000, 256, 0.99, 0.95, 0.15, 6, 10, 100))
+    ppo = threading.Thread(name = 'PPO', target = PPO, args = (env, [32,32],\
+                           5e-4, 2e-4, 5000, 128, 0.99, 0.95, 0.15, 6, 10, 100))
     ppo.setDaemon(True)
     ppo.start()
     environment.showPlot(env)

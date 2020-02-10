@@ -12,6 +12,7 @@ import time
 import random
 import math
 import fkmath as fkm
+from tqdm import tqdm
 
 np.set_printoptions(precision=4, linewidth=160)
 fig = plt.figure()
@@ -56,7 +57,7 @@ class arm(threading.Thread):
         self.actual_epoch = actual_epoch
         self.actual_step = actual_step
         goals = np.array([fkm.angleNormalize(act[i]) for i in range(4)])
-        self.ctarget(goals, 75)
+        self.ctarget(goals, 100)
         rew = self.get_episode_reward()
         obs2 = act
         return obs2, rew, self.done
@@ -125,7 +126,6 @@ class arm(threading.Thread):
                         cont = cont + 1
             self.points = pd.DataFrame(self.points)
             self.points.rename(columns = {0:'x', 1:'y', 2:'z'}, inplace=True)
-            print(self.points)
             self.plotpoints = True
             while not self.done:
                 for p in range(int(self.obj_number)):
@@ -167,7 +167,6 @@ class arm(threading.Thread):
                 dist = pd.DataFrame({'obj_dist':[math.sqrt(math.sqrt(x**2 + y**2)**2 + z**2)]})
                 distance = distance.append(dist).reset_index(drop=True)
             self.distance = np.squeeze(distance.T.values)
-            print(self.distance)
             time.sleep(0.1)
 
     def ctarget(self, targ, iterations):
@@ -179,11 +178,12 @@ class arm(threading.Thread):
         while True:
             if self.stop == True:
                 break
-            time.sleep(0.1)
+            time.sleep(0.5)
 
     def dataFlow(self, targ, iterations):
         track = np.linspace(self.goals, targ, num=iterations)
-        for t in track:
-            self.goals = t
-            time.sleep(0.1)
+        for t in tqdm(range(len(track))):
+            self.goals = track[t]
+            time.sleep(0.075)
+        print(track[len(track)-1])
         self.stop = True
