@@ -53,13 +53,16 @@ class arm(threading.Thread):
         dis.start()
         time.sleep(1.0)
 
-    def step(self, act, actual_epoch, actual_step):
+    def step(self, act, actual_epoch, actual_step, normalize):
         self.actual_epoch = actual_epoch
         self.actual_step = actual_step
-        goals = np.array([fkm.angleNormalize(act[i]) for i in range(4)])
+        if normalize:
+            goals = np.array([fkm.angleNormalize(act[i]) for i in range(4)])
+        else:
+            goals = np.array([act[i] for i in range(4)])
         self.ctarget(goals, 100)
         rew = self.get_episode_reward()
-        obs2 = act
+        obs2 = self.distance
         return obs2, rew, self.done
 
     def get_episode_reward(self):
@@ -77,8 +80,9 @@ class arm(threading.Thread):
     def get_episode_length(self):
         return self.obj_number
 
-    def reset(self):
+    def resety(self):
         self.reset = True
+        return self.distance
 
     def clear_tratectory(self):
         self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
@@ -112,7 +116,7 @@ class arm(threading.Thread):
         while True:
             self.done = False
             self.reset = False
-            self.obj_number = np.random.randint(low=5, high=10, size=1)
+            self.obj_number = np.random.randint(low=10, high=11, size=1)
             self.obj_remaining = self.obj_number
             self.points = []
             self.points.append([51.3, 0, 0])
