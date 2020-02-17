@@ -157,7 +157,7 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
                     " Step: ", step_count, " -=============-")
             # If not gathered enough experience yet, act randomly
             if len(buffer) < min_buffer_size:
-                act = [np.squeeze(np.random.randint(low=-120, high=121, size=1)[0]) for i in range(4)]
+                act = env.sample()
             else:
                 act = agent_noisy_op(obs, 0.1)
             print(act)
@@ -205,14 +205,10 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
 if __name__ == '__main__':
     env = environment.arm()
     env.start()
-    # (env, hidden_sizes=[64,64], cr_lr=5e-4, ac_lr=2e-4, num_epochs=5000,
-    # minibatch_size=256, gamma=0.99, lam=0.95, eps=0.15, actor_iter=6,
-    # critic_iter=10, steps_per_env=5000)
-    #ppo = threading.Thread(name = 'PPO', target = PPO, args = (env, [32,32],\
-    #                       5e-4, 2e-4, 5000, 128, 0.99, 0.95, 0.15, 6, 10, 100))
-
+    # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000,\
+    # buffer_size=5000, discount=0.99, batch_size=128, min_buffer_size=5000, tau=0.005):
     ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [64,64],\
-                            3e-4, 4e-4, 200000, 100, 0.99, 64, 10000, 0.003))
+                            3e-4, 4e-4, 5000, 50, 0.99, 64, 50, 0.003))
     ddpg.setDaemon(True)
     ddpg.start()
     environment.showPlot(env)

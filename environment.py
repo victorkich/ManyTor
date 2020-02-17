@@ -74,7 +74,7 @@ class arm(threading.Thread):
             if((self.distance[i] <= threshold) and self.distance[i] != 0):
                 variable_reward.append(weight/self.distance[i])
         variable_reward = sum(variable_reward)
-        reward = fixed_reward + variable_reward
+        reward = (fixed_reward + variable_reward) * 100
         return reward
 
     def get_episode_length(self):
@@ -93,7 +93,7 @@ class arm(threading.Thread):
         self.ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
         self.ax.scatter3D(x, y, z, color='black', label='Joints')
         self.ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
-        self.ax.scatter3D(0, 0, 4.3, plotnonfinite=False, s=135000, norm=1, alpha=0.2, lw=0)
+        #self.ax.scatter3D(0, 0, 4.3, plotnonfinite=False, s=135000, norm=1, alpha=0.2, lw=0)
         x, y, z = [np.array(i) for i in [self.trajectory.x, self.trajectory.y, self.trajectory.z]]
         self.ax.plot3D(x, y, z, c='b', label='Trajectory')
 
@@ -161,6 +161,10 @@ class arm(threading.Thread):
             self.trajectory = self.trajectory.append(self.df.iloc[3])
             self.trajectory.drop_duplicates(inplace=True)
             time.sleep(0.2)
+
+    def sample(self):
+        sample = [np.squeeze(np.random.randint(low=-120, high=121, size=1)[0]) for i in range(4)]
+        return sample
 
     def distanced(self):
         while True:
