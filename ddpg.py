@@ -150,6 +150,7 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
         g_rew = 0
         done = False
         actual_epoch += 1
+        env.clear_tratectory()
 
         while not done:
             step_count += 1
@@ -163,7 +164,7 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
             print(act)
             # Take a step in the environment
             obs2, rew, done = env.step(act, actual_epoch, step_count, False)
-            print("Reward: ", rew)
+            print("Reward: ", rew[0])
 
             # Add the transition in the buffer
             buffer.add(obs.copy(), rew, act, obs2.copy(), done)
@@ -205,10 +206,10 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
 if __name__ == '__main__':
     env = environment.arm()
     env.start()
-    # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000,\
-    # buffer_size=5000, discount=0.99, batch_size=128, min_buffer_size=5000, tau=0.005):
+    # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=5000,\
+    # buffer_size=5000, discount=0.99, batch_size=128, min_buffer_size=10000, tau=0.005):
     ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [64,64],\
-                            3e-4, 4e-4, 5000, 50, 0.99, 64, 50, 0.003))
+                            3e-4, 4e-4, 5000, 50, 0.99, 64, 10000, 0.003))
     ddpg.setDaemon(True)
     ddpg.start()
     environment.showPlot(env)

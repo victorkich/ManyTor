@@ -56,6 +56,7 @@ class arm(threading.Thread):
     def step(self, act, actual_epoch, actual_step, normalize):
         self.actual_epoch = actual_epoch
         self.actual_step = actual_step
+        self.old_distance = self.distance
         if normalize:
             goals = np.array([fkm.angleNormalize(act[i]) for i in range(4)])
         else:
@@ -67,14 +68,21 @@ class arm(threading.Thread):
 
     def get_episode_reward(self):
         fixed_reward = (self.obj_number-self.obj_remaining)/self.obj_number
-        threshold = 30
+        threshold = 70
+        touch_ground = 0
+        if (self.df.iloc[self.df.shape[0] - 1, 2] < 0):
+            touch_ground = -200
         weight = self.obj_number/threshold
         variable_reward = []
+        for i in range(int(self.obj_number)):
+            if((self.old_distance[i] <= threshold) and self.old_distance[i] != 0):
+                variable_reward.append(weight/self.old_distance[i])
+        old_variable_reward = sum(variable_reward)
         for i in range(int(self.obj_number)):
             if((self.distance[i] <= threshold) and self.distance[i] != 0):
                 variable_reward.append(weight/self.distance[i])
         variable_reward = sum(variable_reward)
-        reward = (fixed_reward + variable_reward) * 100
+        reward = ((fixed_reward*2 + (variable_reward - old_variable_reward)) * 100) + touch_ground
         return reward
 
     def get_episode_length(self):
@@ -116,7 +124,7 @@ class arm(threading.Thread):
         while True:
             self.done = False
             self.reset = False
-            self.obj_number = np.random.randint(low=10, high=11, size=1)
+            self.obj_number = np.array([10]) #np.random.randint(low=10, high=11, size=1)
             self.obj_remaining = self.obj_number
             self.points = []
             self.points.append([51.3, 0, 0])
@@ -193,5 +201,5 @@ class arm(threading.Thread):
         for t in tqdm(range(len(track))):
             self.goals = track[t]
             time.sleep(0.075)
-        print(track[len(track)-1])
+        #print(track[len(track)-1])
         self.stop = True
