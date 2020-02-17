@@ -100,7 +100,7 @@ class arm(threading.Thread):
         self.ax.clear()
         self.ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
         self.ax.scatter3D(x, y, z, color='black', label='Joints')
-        self.ax.scatter(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
+        self.ax.scatter3D(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
         #self.ax.scatter3D(0, 0, 4.3, plotnonfinite=False, s=135000, norm=1, alpha=0.2, lw=0)
         x, y, z = [np.array(i) for i in [self.trajectory.x, self.trajectory.y, self.trajectory.z]]
         self.ax.plot3D(x, y, z, c='b', label='Trajectory')
@@ -149,7 +149,7 @@ class arm(threading.Thread):
                         else:
                             validation_test.append(False)
                     if all(validation_test):
-                        self.points.drop(p, inplace=True)
+                        self.points.iloc[p] = 0.0
                         self.obj_remaining -= 1
                 if self.points.empty:
                     self.done = True
