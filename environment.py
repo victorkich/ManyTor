@@ -63,8 +63,8 @@ class arm(threading.Thread):
         else:
             goals = np.array([act[i] for i in range(4)])
         self.ctarget(goals, 100)
-        rew = self.get_episode_reward()
         obs2 = self.distanced()
+        rew = self.get_episode_reward()
         return obs2, rew, self.done
 
     def get_episode_reward(self):
@@ -94,6 +94,7 @@ class arm(threading.Thread):
 
     def resety(self):
         self.reset = True
+        self.plotpoints = False
         self.old_fixed_reward = 0
         self.negative_reward = False
         self.goals = np.array([0.0 for i in range(4)])
@@ -141,9 +142,9 @@ class arm(threading.Thread):
             self.obj_number = np.array([10]) #np.random.randint(low=10, high=11, size=1)
             self.obj_remaining = np.array([10])
             self.points = []
-            self.points.append([51.3, 0, 0])
+            #self.points.append([51.3, 0, 0])
             cont = 0
-            self.points.append([0,51,0])
+            #self.points.append([0,51,0])
             while cont < self.obj_number:
                 rands = [random.uniform(-51.3, 51.3) for i in range(3)]
                 if rands[2] >= 0:
@@ -156,7 +157,7 @@ class arm(threading.Thread):
             self.plotpoints = True
             self.boolplot = [True for i in range(10)]
             time.sleep(2)
-            while not (self.done or self.reset):
+            while not (self.done or self.reset or self.plotpoints):
                 for p in range(int(self.obj_number)):
                     validation_test = []
                     for a in range(3):
@@ -188,20 +189,22 @@ class arm(threading.Thread):
             self.trajectory.drop_duplicates(inplace=True)
             if self.df.iloc[3, 2] < 0:
                 self.negative_reward = True
-            time.sleep(0.1)
+            time.sleep(0.15)
 
     def sample(self):
         sample = [np.squeeze(np.random.randint(low=-120, high=121, size=1)[0]) for i in range(4)]
         return sample
 
     def distanced(self):
-        distance = pd.DataFrame({'obj_dist':[]})
-        for p in range(int(self.obj_number)):
-            x, y, z = [(abs(self.df.iloc[3, i] - self.points.iloc[p, i])) for i in range(3)]
-            dist = pd.DataFrame({'obj_dist':[math.sqrt(math.sqrt(x**2 + y**2)**2 + z**2)]})
-            distance = distance.append(dist).reset_index(drop=True)
-        distance = np.squeeze(distance.T.values)
-        return distance
+        while True:
+            if self.plotpoints:
+                distance = pd.DataFrame({'obj_dist':[]})
+                for p in range(int(self.obj_number)):
+                    x, y, z = [(abs(self.df.iloc[3, i] - self.points.iloc[p, i])) for i in range(3)]
+                    dist = pd.DataFrame({'obj_dist':[math.sqrt(math.sqrt(x**2 + y**2)**2 + z**2)]})
+                    distance = distance.append(dist).reset_index(drop=True)
+                distance = np.squeeze(distance.T.values)
+                return distance
 
     def ctarget(self, targ, iterations):
         self.stop = False
