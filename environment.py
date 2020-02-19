@@ -18,7 +18,7 @@ np.set_printoptions(precision=4, linewidth=160)
 fig = plt.figure()
 
 def showPlot(arm):
-    ani = FuncAnimation(fig, arm.animate, interval=1)
+    ani = FuncAnimation(fig, arm.animate, interval=0.005)
     plt.show()
 
 class arm(threading.Thread):
@@ -62,7 +62,7 @@ class arm(threading.Thread):
             goals = np.array([fkm.angleNormalize(act[i]) for i in range(4)])
         else:
             goals = np.array([act[i] for i in range(4)])
-        self.ctarget(goals, 100)
+        self.ctarget(goals, 200)
         obs2 = self.distanced()
         rew = self.get_episode_reward()
         return obs2, rew, self.done
@@ -73,6 +73,7 @@ class arm(threading.Thread):
         touch_ground = 0
         if self.negative_reward:
             touch_ground = -200
+            print("Touch the ground!!!")
         weight = self.obj_number/threshold
         variable_reward = []
         for i in range(int(self.obj_number)):
@@ -92,16 +93,17 @@ class arm(threading.Thread):
     def get_episode_length(self):
         return self.obj_number
 
+    def clear_trajectory(self):
+        self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
+
     def resety(self):
+        self.clear_trajectory()
         self.reset = True
         self.plotpoints = False
         self.old_fixed_reward = 0
         self.negative_reward = False
         self.goals = np.array([0.0 for i in range(4)])
         return self.distanced()
-
-    def clear_tratectory(self):
-        self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
 
     def animate(self, i):
         x, y, z = [np.array(i) for i in [self.df.x, self.df.y, self.df.z]]
@@ -172,7 +174,7 @@ class arm(threading.Thread):
                         self.obj_remaining -= 1
                 if self.distanced().all() == 0.0:
                     self.done = True
-                time.sleep(0.1)
+                time.sleep(0.01)
             while self.reset == False:
                 time.sleep(0.5)
 
@@ -189,7 +191,7 @@ class arm(threading.Thread):
             self.trajectory.drop_duplicates(inplace=True)
             if self.df.iloc[3, 2] < 0:
                 self.negative_reward = True
-            time.sleep(0.15)
+            time.sleep(0.03)
 
     def sample(self):
         sample = [np.squeeze(np.random.randint(low=-120, high=121, size=1)[0]) for i in range(4)]
@@ -215,12 +217,12 @@ class arm(threading.Thread):
         while True:
             if self.stop == True:
                 break
-            time.sleep(0.05)
+            time.sleep(0.02)
 
     def dataFlow(self, targ, iterations):
         track = np.linspace(self.goals, targ, num=iterations)
         for t in tqdm(range(len(track))):
             self.goals = track[t]
-            time.sleep(0.075)
+            time.sleep(0.02)
         #print(track[len(track)-1])
         self.stop = True
