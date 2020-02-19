@@ -71,7 +71,7 @@ class arm(threading.Thread):
         fixed_reward = (self.obj_number-self.obj_remaining)/self.obj_number-self.old_fixed_reward
         threshold = 100
         touch_ground = 0
-        if (self.negative_reward):
+        if self.negative_reward:
             touch_ground = -200
         weight = self.obj_number/threshold
         variable_reward = []
@@ -85,7 +85,8 @@ class arm(threading.Thread):
         variable_reward = sum(variable_reward)
         reward = ((fixed_reward*2 + (variable_reward - old_variable_reward)) * 100) + touch_ground
         self.old_fixed_reward = fixed_reward
-        _ = self.resety()
+        if self.negative_reward:
+            _ = self.resety()
         return reward
 
     def get_episode_length(self):
@@ -170,6 +171,7 @@ class arm(threading.Thread):
                         self.obj_remaining -= 1
                 if self.distance.all() == 0.0:
                     self.done = True
+                time.sleep(0.1)
             while self.reset == False:
                 time.sleep(0.5)
 
