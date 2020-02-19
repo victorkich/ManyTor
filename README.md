@@ -8,7 +8,7 @@ Is this project i use matplotlib to plot and simulate links, joints and objectiv
 My environment consist in one manipulator with 4 joints (3+terminal) with the following Denavit-Hartember parameters:
 
 <p align="center"> 
-<img src="https://i.imgur.com/IyulesQ.png">
+<img src="https://i.imgur.com/IyulesQ.png"/>
 </p>
 
 # The Objectives
@@ -16,7 +16,7 @@ The environment objectives consist in 10 random points refreshing when all point
 Each point have one fixed reward and one variable reward, but that will be explained soon.
 
 <p align="center"> 
-<img src="https://media.giphy.com/media/ftlNuH4ftLXXabXW7z/giphy.gif"></img>
+<img src="https://media.giphy.com/media/ftlNuH4ftLXXabXW7z/giphy.webp"/>
 </p>
 
 # The Reward
@@ -27,7 +27,7 @@ Each point have one fixed reward and one variable reward, but that will be expla
 ...
 ...
 <p align="center"> 
-<img src="">
+<img src=""/>
 </p>
 
 # DDPG
@@ -35,5 +35,5 @@ Each point have one fixed reward and one variable reward, but that will be expla
 ...
 ...
 <p align="center"> 
-<img src="">
+<img src=""/>
 </p>
