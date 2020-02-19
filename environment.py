@@ -57,14 +57,14 @@ class arm(threading.Thread):
     def step(self, act, actual_epoch, actual_step, normalize):
         self.actual_epoch = actual_epoch
         self.actual_step = actual_step
-        self.old_distance = self.distance
+        self.old_distance = self.distanced()
         if normalize:
             goals = np.array([fkm.angleNormalize(act[i]) for i in range(4)])
         else:
             goals = np.array([act[i] for i in range(4)])
         self.ctarget(goals, 100)
         rew = self.get_episode_reward()
-        obs2 = self.distance
+        obs2 = self.distanced()
         return obs2, rew, self.done
 
     def get_episode_reward(self):
@@ -80,8 +80,8 @@ class arm(threading.Thread):
                 variable_reward.append(weight/self.old_distance[i])
         old_variable_reward = sum(variable_reward)
         for i in range(int(self.obj_number)):
-            if((self.distance[i] <= threshold) and self.distance[i] != 0):
-                variable_reward.append(weight/self.distance[i])
+            if((self.distanced()[i] <= threshold) and self.distanced()[i] != 0):
+                variable_reward.append(weight/self.distanced()[i])
         variable_reward = sum(variable_reward)
         reward = ((fixed_reward*2 + (variable_reward - old_variable_reward)) * 100) + touch_ground
         self.old_fixed_reward = fixed_reward
@@ -97,7 +97,7 @@ class arm(threading.Thread):
         self.old_fixed_reward = 0
         self.negative_reward = False
         self.goals = np.array([0.0 for i in range(4)])
-        return self.distance
+        return self.distanced()
 
     def clear_tratectory(self):
         self.trajectory = pd.DataFrame({'x':[], 'y':[], 'z':[]})
@@ -169,7 +169,7 @@ class arm(threading.Thread):
                         self.points.iloc[p] = 0.0
                         self.boolplot[p] = False
                         self.obj_remaining -= 1
-                if self.distance.all() == 0.0:
+                if self.distanced().all() == 0.0:
                     self.done = True
                 time.sleep(0.1)
             while self.reset == False:
@@ -195,14 +195,13 @@ class arm(threading.Thread):
         return sample
 
     def distanced(self):
-        while True:
-            distance = pd.DataFrame({'obj_dist':[]})
-            for p in range(int(self.obj_number)):
-                x, y, z = [(abs(self.df.iloc[3, i] - self.points.iloc[p, i])) for i in range(3)]
-                dist = pd.DataFrame({'obj_dist':[math.sqrt(math.sqrt(x**2 + y**2)**2 + z**2)]})
-                distance = distance.append(dist).reset_index(drop=True)
-            self.distance = np.squeeze(distance.T.values)
-            time.sleep(0.1)
+        distance = pd.DataFrame({'obj_dist':[]})
+        for p in range(int(self.obj_number)):
+            x, y, z = [(abs(self.df.iloc[3, i] - self.points.iloc[p, i])) for i in range(3)]
+            dist = pd.DataFrame({'obj_dist':[math.sqrt(math.sqrt(x**2 + y**2)**2 + z**2)]})
+            distance = distance.append(dist).reset_index(drop=True)
+        distance = np.squeeze(distance.T.values)
+        return distance
 
     def ctarget(self, targ, iterations):
         self.stop = False
