@@ -36,6 +36,7 @@ class arm(threading.Thread):
         self.n_obs = [0,0,0,0]
         self.actual_epoch = 0
         self.actual_step = 0
+        self.old_fixed_reward = 0
 
     def run(self):
         rt = threading.Thread(name = 'realtime', target = self.realtime)
@@ -67,10 +68,10 @@ class arm(threading.Thread):
         return obs2, rew, self.done
 
     def get_episode_reward(self):
-        fixed_reward = (self.obj_number-self.obj_remaining)/self.obj_number
-        threshold = 70
+        fixed_reward = (self.obj_number-self.obj_remaining)/self.obj_number-self.old_fixed_reward
+        threshold = 100
         touch_ground = 0
-        if (self.df.iloc[self.df.shape[0] - 1, 2] < 0):
+        if (self.negative_reward):
             touch_ground = -200
         weight = self.obj_number/threshold
         variable_reward = []
@@ -83,6 +84,8 @@ class arm(threading.Thread):
                 variable_reward.append(weight/self.distance[i])
         variable_reward = sum(variable_reward)
         reward = ((fixed_reward*2 + (variable_reward - old_variable_reward)) * 100) + touch_ground
+        self.old_fixed_reward = fixed_reward
+        _ = self.resety()
         return reward
 
     def get_episode_length(self):
@@ -90,6 +93,9 @@ class arm(threading.Thread):
 
     def resety(self):
         self.reset = True
+        self.old_fixed_reward = 0
+        self.negative_reward = False
+        self.goals = np.array([0.0 for i in range(4)])
         return self.distance
 
     def clear_tratectory(self):
@@ -106,13 +112,20 @@ class arm(threading.Thread):
         self.ax.plot3D(x, y, z, c='b', label='Trajectory')
 
         if self.plotpoints == True:
-            x, y, z = [np.array(i) for i in [self.points.x, self.points.y, self.points.z]]
+            x, y, z, = [], [], []
+            n_x, n_y, n_z = [np.array(i) for i in [self.points.x, self.points.y, self.points.z]]
+            for i in range(self.obj_number[0]):
+                if self.boolplot[i]:
+                    x.append(n_x[i])
+                    y.append(n_y[i])
+                    z.append(n_z[i])
+
             legend = 'Objectives: ' + str(self.obj_remaining[0]) + '/' + str(self.obj_number[0])
             self.ax.scatter3D(x, y, z, color='green', label=legend)
 
         title = 'Epoch: ' + str(self.actual_epoch) + ' Step: ' + str(self.actual_step)
-        self.ax.set_title(title)
-        self.ax.legend(loc=2, prop={'size':10})
+        self.ax.set_title(title, size=10)
+        self.ax.legend(loc=2, prop={'size':7})
         self.ax.set_xlabel('x')
         self.ax.set_ylabel('y')
         self.ax.set_zlabel('z')
@@ -125,10 +138,11 @@ class arm(threading.Thread):
             self.done = False
             self.reset = False
             self.obj_number = np.array([10]) #np.random.randint(low=10, high=11, size=1)
-            self.obj_remaining = self.obj_number
+            self.obj_remaining = np.array([10])
             self.points = []
             self.points.append([51.3, 0, 0])
             cont = 0
+            self.points.append([0,51,0])
             while cont < self.obj_number:
                 rands = [random.uniform(-51.3, 51.3) for i in range(3)]
                 if rands[2] >= 0:
@@ -139,7 +153,9 @@ class arm(threading.Thread):
             self.points = pd.DataFrame(self.points)
             self.points.rename(columns = {0:'x', 1:'y', 2:'z'}, inplace=True)
             self.plotpoints = True
-            while not self.done:
+            self.boolplot = [True for i in range(10)]
+            time.sleep(2)
+            while not (self.done or self.reset):
                 for p in range(int(self.obj_number)):
                     validation_test = []
                     for a in range(3):
@@ -150,10 +166,10 @@ class arm(threading.Thread):
                             validation_test.append(False)
                     if all(validation_test):
                         self.points.iloc[p] = 0.0
+                        self.boolplot[p] = False
                         self.obj_remaining -= 1
-                if self.points.empty:
+                if self.distance.all() == 0.0:
                     self.done = True
-                time.sleep(0.01)
             while self.reset == False:
                 time.sleep(0.5)
 
@@ -168,7 +184,9 @@ class arm(threading.Thread):
             self.df = pd.DataFrame(df)
             self.trajectory = self.trajectory.append(self.df.iloc[3])
             self.trajectory.drop_duplicates(inplace=True)
-            time.sleep(0.2)
+            if self.df.iloc[3, 2] < 0:
+                self.negative_reward = True
+            time.sleep(0.1)
 
     def sample(self):
         sample = [np.squeeze(np.random.randint(low=-120, high=121, size=1)[0]) for i in range(4)]
@@ -178,8 +196,7 @@ class arm(threading.Thread):
         while True:
             distance = pd.DataFrame({'obj_dist':[]})
             for p in range(int(self.obj_number)):
-                x, y, z = [(abs(self.df.iloc[3, i] - self.points.iloc[p, i]))\
-                            for i in range(3)]
+                x, y, z = [(abs(self.df.iloc[3, i] - self.points.iloc[p, i])) for i in range(3)]
                 dist = pd.DataFrame({'obj_dist':[math.sqrt(math.sqrt(x**2 + y**2)**2 + z**2)]})
                 distance = distance.append(dist).reset_index(drop=True)
             self.distance = np.squeeze(distance.T.values)
@@ -194,7 +211,7 @@ class arm(threading.Thread):
         while True:
             if self.stop == True:
                 break
-            time.sleep(0.5)
+            time.sleep(0.05)
 
     def dataFlow(self, targ, iterations):
         track = np.linspace(self.goals, targ, num=iterations)

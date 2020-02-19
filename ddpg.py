@@ -9,6 +9,7 @@ import environment
 import threading
 import fkmath as fkm
 from collections import deque
+import time
 
 tf.compat.v1.disable_eager_execution()
 
@@ -162,8 +163,8 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
                 env.clear_tratectory()
             else:
                 act = agent_noisy_op(obs, 0.1)
-
             print(act)
+            
             # Take a step in the environment
             obs2, rew, done = env.step(act, actual_epoch, step_count, False)
             print("Reward: ", rew[0])
