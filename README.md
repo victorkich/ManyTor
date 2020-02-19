@@ -16,7 +16,7 @@ The environment objectives consist in 10 random points refreshing when all point
 Each point have one fixed reward and one variable reward, but that will be explained soon.
 
 <p align="center"> 
-<img src="https://media.giphy.com/media/ftlNuH4ftLXXabXW7z/giphy.webp"/>
+<img src="https://media.giphy.com/media/Wonv0YvrM5Djy6XkXW/giphy.webp"/>
 </p>
 
 # The Reward
