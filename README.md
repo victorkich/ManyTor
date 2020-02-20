@@ -49,7 +49,7 @@ For DDPG algorithm use -> `python3 ddpg.py --train`
 The training consist in a navigation among a large size of iterations with random values (angles). This is useful for gaining knowledge of the environment and understanding how work the observations. All of these events happen because the rewards.
 
 <p align="center"> 
-<img src="https://media.giphy.com/media/fwc6jjKirB53k9a6T0/giphy.webp"/>
+<img src="https://media.giphy.com/media/l0cgKcqi1khQYKt0mC/giphy.webp"/>
 </p>
 
 <h3>The Rewards</h3>
