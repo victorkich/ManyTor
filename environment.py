@@ -80,6 +80,7 @@ class arm(threading.Thread):
             if((self.old_distance[i] <= threshold) and self.old_distance[i] != 0):
                 variable_reward.append(weight/self.old_distance[i])
         old_variable_reward = sum(variable_reward)
+        variable_reward = []
         for i in range(int(self.obj_number)):
             if((self.distanced()[i] <= threshold) and self.distanced()[i] != 0):
                 variable_reward.append(weight/self.distanced()[i])
@@ -158,7 +159,7 @@ class arm(threading.Thread):
             self.points.rename(columns = {0:'x', 1:'y', 2:'z'}, inplace=True)
             self.plotpoints = True
             self.boolplot = [True for i in range(10)]
-            time.sleep(2)
+            time.sleep(0.5)
             while not (self.done or self.reset or self.plotpoints):
                 for p in range(int(self.obj_number)):
                     validation_test = []
@@ -191,7 +192,7 @@ class arm(threading.Thread):
             self.trajectory.drop_duplicates(inplace=True)
             if self.df.iloc[3, 2] < 0:
                 self.negative_reward = True
-            time.sleep(0.03)
+            time.sleep(0.1)
 
     def sample(self):
         sample = [np.squeeze(np.random.randint(low=-120, high=121, size=1)[0]) for i in range(4)]
@@ -217,12 +218,12 @@ class arm(threading.Thread):
         while True:
             if self.stop == True:
                 break
-            time.sleep(0.02)
+            time.sleep(0.1)
 
     def dataFlow(self, targ, iterations):
         track = np.linspace(self.goals, targ, num=iterations)
         for t in tqdm(range(len(track))):
             self.goals = track[t]
-            time.sleep(0.02)
+            time.sleep(0.015)
         #print(track[len(track)-1])
         self.stop = True

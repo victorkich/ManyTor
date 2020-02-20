@@ -212,7 +212,7 @@ if __name__ == '__main__':
     # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=5000,\
     # buffer_size=5000, discount=0.99, batch_size=128, min_buffer_size=10000, tau=0.005):
     ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [64,64],\
-                            3e-4, 4e-4, 5000, 1000, 0.99, 64, 1000, 0.003))
+                            3e-4, 4e-4, 5000, 20000, 0.99, 64, 20000, 0.003))
     ddpg.setDaemon(True)
     ddpg.start()
     environment.showPlot(env)
