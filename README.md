@@ -7,11 +7,11 @@ First, you need the clone this repository. For do this use:
 Now, you need chose what algorithm do you want run, PPO or DDPG. 
 If you want run the DDPG execute the following code:
 
-`python3 ddpg.py`
+`python3 ddpg.py --test`
 
 And for the PPO this:
 
-`python3 ppo.py`
+`python3 ppo.py --test`
 
 _Be aware you have tensorflow v2 installed. Even as numpy, pandas, tqdm, keras and matplotlib._
 
@@ -38,14 +38,21 @@ Each point have one fixed reward and one variable reward, but that will be expla
 <img src="https://media.giphy.com/media/Wonv0YvrM5Djy6XkXW/giphy.webp"/>
 </p>
 
-<h3>The Rewards</h3>
-... ... ...
+<h3>The Train</h3>
+
+To create a new training file is necessary use the following command:
+
+For PPO algorithm use -> `python3 ppo.py --train`
+
+For DDPG algorithm use -> `python3 ddpg.py --train`
+
+The training consist in a navigation among a large size of iterations with random values (angles). This is useful for gaining knowledge of the environment and understanding how work the observations. All of these events happen because the rewards.
 
 <p align="center"> 
-<img src=""/>
+<img src="https://media.giphy.com/media/RM0A1YB58BWYvhH5fe/giphy.webp"/>
 </p>
 
-<h3>The Train</h3>
+<h3>The Rewards</h3>
 ... ... ...
 
 <p align="center"> 
