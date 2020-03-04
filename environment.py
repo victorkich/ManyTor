@@ -90,7 +90,7 @@ class arm(threading.Thread):
         old_reward = (1/best_old_point)
 
         if self.negative_reward:
-            reward = -10
+            reward = -1
             print("Touch the ground!!!")
             self.clear_trajectory()
         elif abs(self.old_fixed_reward - fixed_reward) > 0:

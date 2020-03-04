@@ -9,7 +9,13 @@ import environment
 import threading
 import fkmath as fkm
 from collections import deque
+import argparse
 import time
+
+parser = argparse.ArgumentParser()
+parser.add_argument("train", help="Set the name of train model file", type=str)
+parser.add_argument("test", help="Select the train model file", type=str)
+args = parser.parse_args()
 
 tf.compat.v1.disable_eager_execution()
 
@@ -136,6 +142,9 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
     sess.run(tf.compat.v1.global_variables_initializer())
     sess.run(init_target_op)
 
+    #Create a saver object which will save all the variables
+    saver = tf.compat.v1.train.Saver()
+
     # Some useful variables..
     step_count = 0
     last_q_update_loss = []
@@ -197,13 +206,15 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
                 batch_rew.append(g_rew)
                 g_rew = 0
 
+    saver.save(sess, 'DDPG_model')
+
 if __name__ == '__main__':
     env = environment.arm()
     env.start()
     # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=5000,\
     # buffer_size=200000, discount=0.99, batch_size=128, min_buffer_size=10000, tau=0.005):
     ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [32, 32],\
-                            3e-4, 4e-4, 5000, 200000, 0.99, 128, 5000, 0.005))
+                            3e-4, 4e-4, 5000, 200000, 0.99, 128, 10000, 0.005))
     ddpg.setDaemon(True)
     ddpg.start()
     environment.showPlot(env)
