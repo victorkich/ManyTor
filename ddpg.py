@@ -162,7 +162,7 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
                 act = env.sample()
                 #env.clear_tratectory()
             else:
-                act = agent_noisy_op(obs, 0.5)
+                act = agent_noisy_op(obs, 0.1)
             print(act)
 
             # Take a step in the environment
@@ -184,22 +184,13 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
                 y_r = np.array(mb_rew) + discount*(1-np.array(mb_done))*q_target_mb
 
                 # optimize the critic
-                _, _, q_train_loss = sess.run([scalar_summary, q_opt, q_loss], feed_dict={obs_ph:mb_obs, y_ph:y_r, act_ph: mb_act})
+                _, q_train_loss = sess.run([q_opt, q_loss], feed_dict={obs_ph:mb_obs, y_ph:y_r, act_ph: mb_act})
 
                 # optimize the actor
                 _, p_train_loss = sess.run([p_opt, p_loss], feed_dict={obs_ph:mb_obs})
 
-                # summaries..
-                last_q_update_loss.append(q_train_loss)
-                last_p_update_loss.append(p_train_loss)
-
                 # Soft update of the target networks
                 sess.run(update_target_op)
-
-                # some 'mean' summaries to plot more smooth functions
-                if step_count % mean_summaries_steps == 0:
-                    last_q_update_loss = []
-                    last_p_update_loss = []
 
             if done:
                 obs = env.resety()
@@ -210,9 +201,9 @@ if __name__ == '__main__':
     env = environment.arm()
     env.start()
     # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=5000,\
-    # buffer_size=5000, discount=0.99, batch_size=128, min_buffer_size=10000, tau=0.005):
-    ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [32,32],\
-                            3e-4, 4e-4, 5000, 1000, 0.99, 64, 1000, 0.0203))
+    # buffer_size=200000, discount=0.99, batch_size=128, min_buffer_size=10000, tau=0.005):
+    ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [32, 32],\
+                            3e-4, 4e-4, 5000, 200000, 0.99, 128, 5000, 0.005))
     ddpg.setDaemon(True)
     ddpg.start()
     environment.showPlot(env)

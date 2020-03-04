@@ -87,16 +87,16 @@ class arm(threading.Thread):
                 break
             cont = cont+1
 
-        old_reward = (1/best_old_point)*200
+        old_reward = (1/best_old_point)
 
         if self.negative_reward:
-            reward = -200
+            reward = -10
             print("Touch the ground!!!")
             self.clear_trajectory()
         elif abs(self.old_fixed_reward - fixed_reward) > 0:
-            reward = 200
+            reward = 1
         else:
-            reward = (1/best_point)*200 - old_reward
+            reward = (1/best_point) - old_reward
 
         self.old_fixed_reward = fixed_reward
         if self.negative_reward:
