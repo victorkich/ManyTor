@@ -91,11 +91,11 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
 
     # Create an online deterministic actor-critic
     with tf.compat.v1.variable_scope('online'):
-        p_onl, qd_onl, qa_onl = deterministic_actor_critic(obs_ph, act_ph, hidden_sizes, act_dim[0], 120)
+        p_onl, qd_onl, qa_onl = deterministic_actor_critic(obs_ph, act_ph, hidden_sizes, act_dim[0], 160)
     # and a target one
     with tf.compat.v1.variable_scope('target'):
         ########## act_dim[0]
-        _, qd_tar, _ = deterministic_actor_critic(obs_ph, act_ph, hidden_sizes, act_dim[0], 120)
+        _, qd_tar, _ = deterministic_actor_critic(obs_ph, act_ph, hidden_sizes, act_dim[0], 160)
 
     def variables_in_scope(scope):
         '''
@@ -124,12 +124,12 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
 
     def agent_op(o):
         a = np.squeeze(sess.run(p_onl, feed_dict={obs_ph:[o]}))
-        return np.clip(a, [-120, -120, -120, -120], [120, 120, 120, 120])
+        return np.clip(a, [-160, -160, -160, -160], [160, 160, 160, 160])
 
     def agent_noisy_op(o, scale):
         action = agent_op(o)
         noisy_action = action + np.random.normal(loc=0.0, scale=scale, size=action.shape)
-        return np.clip(noisy_action, [-120, -120, -120, -120], [120, 120, 120, 120])
+        return np.clip(noisy_action, [-160, -160, -160, -160], [160, 160, 160, 160])
 
     # Create a session and initialize the variables
     sess = tf.compat.v1.Session()
@@ -162,12 +162,12 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
                 act = env.sample()
                 #env.clear_tratectory()
             else:
-                act = agent_noisy_op(obs, 0.1)
+                act = agent_noisy_op(obs, 0.5)
             print(act)
 
             # Take a step in the environment
             obs2, rew, done = env.step(act, actual_epoch, step_count, False)
-            print("Reward: ", rew[0])
+            print("Reward: ", rew)
 
             # Add the transition in the buffer
             buffer.add(obs.copy(), rew, act, obs2.copy(), done)
@@ -211,8 +211,8 @@ if __name__ == '__main__':
     env.start()
     # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=5000,\
     # buffer_size=5000, discount=0.99, batch_size=128, min_buffer_size=10000, tau=0.005):
-    ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [64,64],\
-                            3e-4, 4e-4, 5000, 20000, 0.99, 64, 20000, 0.003))
+    ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [32,32],\
+                            3e-4, 4e-4, 5000, 1000, 0.99, 64, 1000, 0.0203))
     ddpg.setDaemon(True)
     ddpg.start()
     environment.showPlot(env)

@@ -33,7 +33,6 @@ class arm(threading.Thread):
         self.ax = plt.gca(projection='3d')
         self.reset = False
         self.done = False
-        self.n_obs = [0,0,0,0]
         self.actual_epoch = 0
         self.actual_step = 0
         self.old_fixed_reward = 0
@@ -71,25 +70,57 @@ class arm(threading.Thread):
         fixed_reward = (self.obj_number-self.obj_remaining)/self.obj_number-self.old_fixed_reward
         threshold = 100
         touch_ground = 0
+
+        sorted_points = np.sort(self.distanced())
+        cont = 0
+        for i in sorted_points:
+            if i > 0:
+                best_point = sorted_points[cont]
+                break
+            cont = cont+1
+
+        sorted_points = np.sort(self.old_distance)
+        cont = 0
+        for i in sorted_points:
+            if i > 0:
+                best_old_point = sorted_points[cont]
+                break
+            cont = cont+1
+
+        old_reward = (1/best_old_point)*200
+
         if self.negative_reward:
-            touch_ground = -200
+            reward = -200
             print("Touch the ground!!!")
-        weight = self.obj_number/threshold
-        variable_reward = []
-        for i in range(int(self.obj_number)):
-            if((self.old_distance[i] <= threshold) and self.old_distance[i] != 0):
-                variable_reward.append(weight/self.old_distance[i])
-        old_variable_reward = sum(variable_reward)
-        variable_reward = []
-        for i in range(int(self.obj_number)):
-            if((self.distanced()[i] <= threshold) and self.distanced()[i] != 0):
-                variable_reward.append(weight/self.distanced()[i])
-        variable_reward = sum(variable_reward)
-        reward = ((fixed_reward*2 + (variable_reward - old_variable_reward)) * 100) + touch_ground
+            self.clear_trajectory()
+        elif abs(self.old_fixed_reward - fixed_reward) > 0:
+            reward = 200
+        else:
+            reward = (1/best_point)*200 - old_reward
+
         self.old_fixed_reward = fixed_reward
         if self.negative_reward:
             _ = self.resety()
         return reward
+
+
+        '''
+        weight = self.obj_number/threshold
+        variable_reward = []
+        for i in range(int(self.obj_number)):
+            if (self.old_distance[i] <= threshold) and (self.old_distance[i] != 0):
+                variable_reward.append((weight/self.old_distance[i])*200)
+        old_variable_reward = sum(variable_reward)
+        variable_reward = []
+        for i in range(int(self.obj_number)):
+            if (self.distanced()[i] <= threshold) and (self.distanced()[i] != 0):
+                variable_reward.append((weight/self.distanced()[i])*200)
+        variable_reward = sum(variable_reward)
+        if abs(self.old_fixed_reward - fixed_reward) > 0:
+            reward = 200
+        else:
+            reward = (variable_reward - old_variable_reward) + touch_ground
+        '''
 
     def get_episode_length(self):
         return self.obj_number
@@ -104,6 +135,8 @@ class arm(threading.Thread):
         self.old_fixed_reward = 0
         self.negative_reward = False
         self.goals = np.array([0.0 for i in range(4)])
+        time.sleep(0.1)
+        self.clear_trajectory()
         return self.distanced()
 
     def animate(self, i):
@@ -190,7 +223,7 @@ class arm(threading.Thread):
             self.df = pd.DataFrame(df)
             self.trajectory = self.trajectory.append(self.df.iloc[3])
             self.trajectory.drop_duplicates(inplace=True)
-            if self.df.iloc[3, 2] < 0:
+            if any([self.df.iloc[i, 2] for i in range(4)] < np.zeros(4)):
                 self.negative_reward = True
             time.sleep(0.1)
 

@@ -94,20 +94,20 @@ class Buffer():
         assert(len(self.adv) == len(self.ob) == len(self.ac) == len(self.rtg))
         return len(self.ob)
 
-def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=50, \
+def PPO(env=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=50, \
         minibatch_size=5000, gamma=0.99, lam=0.95, eps=0.1, actor_iter=5,\
         critic_iter=10, steps_per_env=100):
 
     # Placeholders
     act_dim = 4
-    obs_dim = 4
-    low_action_space = 0
-    high_action_space = 105
-    act_ph = tf.compat.v1.placeholder(shape=(None, act_dim), dtype=tf.float32, name='act')
-    obs_ph = tf.compat.v1.placeholder(shape=(None, obs_dim), dtype=tf.float32, name='obs')
-    ret_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='ret')
-    adv_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='adv')
-    old_p_log_ph = tf.compat.v1.placeholder(shape=(None,), dtype=tf.float32, name='old_p_log')
+    obs_dim = (10,)
+    low_action_space = [-160,-160,-160,-160]
+    high_action_space = [160,160,160,160]
+    act_ph = tf.keras.backend.placeholder(shape=(None, act_dim), dtype=tf.float32, name='act')
+    obs_ph = tf.keras.backend.placeholder(shape=(None, obs_dim[0]), dtype=tf.float32, name='obs')
+    ret_ph = tf.keras.backend.placeholder(shape=(None,), dtype=tf.float32, name='ret')
+    adv_ph = tf.keras.backend.placeholder(shape=(None,), dtype=tf.float32, name='adv')
+    old_p_log_ph = tf.keras.backend.placeholder(shape=(None,), dtype=tf.float32, name='old_p_log')
 
     # Computational graph for the policy of a continuous action space
     with tf.compat.v1.variable_scope('actor_nn'):
@@ -118,7 +118,7 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
     # The noise is proportional to the standard deviation
     p_noisy = p_logits + tf.random.normal(tf.shape(p_logits), 0, 1) * tf.exp(log_std)
     # CLip the noisy actions
-    act_smp = tf.clip_by_value(p_noisy, low_action_space, high_action_space)
+    act_smp = tf.compat.v1.clip_by_value(p_noisy, low_action_space, high_action_space)
 
     # Compute the gaussian log likelihood
     p_log = gaussian_log_likelihood(act_ph, p_logits, log_std)
@@ -148,6 +148,9 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
     # Initialize the variables
     sess.run(tf.compat.v1.global_variables_initializer())
 
+    # Reset the environment
+    obs = env.resety()
+
     # Variables to store the total number of steps ahs epochs
     step_count = 0
     epoch_count = 0
@@ -168,17 +171,19 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
             # Iterate over a fixed number of steps
             print("             -=============- Epoch: ", epoch_count,\
                     " Step: ", step_count, " -=============-")
-            act, val = sess.run([act_smp, s_values], feed_dict={obs_ph:[env.n_obs]})
+            act, val = sess.run([act_smp, s_values], feed_dict={obs_ph:[obs]})
             act = np.squeeze(act)
+            print(act)
+            print(val)
 
             # Take a step in the environment
-            obs2, rew, done = env.step(act, epoch_count, step_count)
+            obs2, rew, done = env.step(act, epoch_count, step_count, False)
             print("Reward: ", rew)
 
             # Add the new transition to the temporary buffers
-            temp_buf.append([env.n_obs.copy(), rew, act, np.squeeze(val)])
+            temp_buf.append([obs, rew, act, np.squeeze(val)])
 
-            env.n_obs = obs2.copy()
+            obs = obs2.copy()
 
             if done:
                 # Store the full trajectory in the buffer
@@ -188,14 +193,14 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
                 # Empty temporary buffer
                 temp_buf = []
 
-                batch_rew.append(env.get_episode_reward())
-                batch_len.append(env.get_episode_length())
+                #batch_rew.append(env.get_episode_reward())
+                #batch_len.append(env.get_episode_length())
 
                 # Reset the environment
-                env.reset()
+                env.resety()
 
         # Bootstrap with the estimated state value of the next state!
-        last_v = sess.run(s_values, feed_dict={obs_ph:[env.n_obs]})
+        last_v = sess.run(s_values, feed_dict={obs_ph:[obs]})
         buffer.store(np.array(temp_buf), np.squeeze(last_v))
 
         # Gather the entire batch from the buffer
@@ -233,7 +238,7 @@ def PPO(environment=None, hidden_sizes=[32], cr_lr=5e-3, ac_lr=5e-3, num_epochs=
         if len(batch_rew) > 0:
             print('Ep:%d Rew:%.2f -- Step:%d' % (ep, np.mean(batch_rew), step_count))
 
-        env.clear_tratectory()
+        env.clear_trajectory()
 
 if __name__ == '__main__':
     env = environment.arm()
