@@ -13,8 +13,8 @@ import argparse
 import time
 
 parser = argparse.ArgumentParser()
-parser.add_argument("train", help="Set the name of train model file", type=str)
-parser.add_argument("test", help="Select the train model file", type=str)
+parser.add_argument("--train", help="Set the name of train model file", type=str)
+parser.add_argument("--test", help="Select the train model file", type=str)
 args = parser.parse_args()
 
 tf.compat.v1.disable_eager_execution()
@@ -206,15 +206,16 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
                 batch_rew.append(g_rew)
                 g_rew = 0
 
-    saver.save(sess, 'DDPG_model')
+    saver.save(sess, args.train)
 
 if __name__ == '__main__':
-    env = environment.arm()
-    env.start()
-    # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=5000,\
-    # buffer_size=200000, discount=0.99, batch_size=128, min_buffer_size=10000, tau=0.005):
-    ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [32, 32],\
-                            3e-4, 4e-4, 5000, 200000, 0.99, 128, 10000, 0.005))
-    ddpg.setDaemon(True)
-    ddpg.start()
-    environment.showPlot(env)
+    if args.train:
+        env = environment.arm()
+        env.start()
+        # env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=5000,\
+        # buffer_size=200000, discount=0.99, batch_size=128, min_buffer_size=10000, tau=0.005):
+        ddpg = threading.Thread(name = 'DDPG', target = DDPG, args = (env, [128, 128],\
+                                3e-4, 4e-4, 5000, 200000, 0.99, 256, 5000, 0.005))
+        ddpg.setDaemon(True)
+        ddpg.start()
+        environment.showPlot(env)
