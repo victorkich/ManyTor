@@ -160,7 +160,6 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
         g_rew = 0
         done = False
         actual_epoch += 1
-        #env.clear_trajectory()
 
         while not done:
             step_count += 1
@@ -169,7 +168,6 @@ def DDPG(env, hidden_sizes=[32], ac_lr=1e-2, cr_lr=1e-2, num_epochs=2000, buffer
             # If not gathered enough experience yet, act randomly
             if len(buffer) < min_buffer_size:
                 act = env.sample()
-                #env.clear_tratectory()
             else:
                 act = agent_noisy_op(obs, 0.1)
             print(act)
