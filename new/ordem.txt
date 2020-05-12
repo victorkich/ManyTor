@@ -1,0 +1,3 @@
+Thread -> Transformar em 3 Funções realtime, objectives e distanced
+Step -> Arrumar a função e consequentemente remover ctarget e dataflow
+Animate -> matplotlib para vispy

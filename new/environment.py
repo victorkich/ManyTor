@@ -96,7 +96,10 @@ class Environment():
       raise Exception("Game is Over")
 
     self.steps_left -= 1
+
+    #reward vamos deixar por ultimo
     reward = random.random()
+
     return reward
 
   def action_sample(self):
@@ -154,16 +157,19 @@ class arm(threading.Thread):
         self.old_fixed_reward = 0
 
     def run(self):
+        ## Isso cuida da trajetoria
         rt = threading.Thread(name = 'realtime', target = self.realtime)
         rt.setDaemon(True)
         rt.start()
         time.sleep(1.0)
 
+        ## Isso cuida dos objetivos
         obj = threading.Thread(name = 'objectives', target = self.objectives)
         obj.setDaemon(True)
         obj.start()
         time.sleep(1.0)
 
+        ## Isso cuida das observações, vulgo pontos no espaço
         dis = threading.Thread(name = 'distance', target = self.distanced)
         dis.setDaemon(True)
         dis.start()
