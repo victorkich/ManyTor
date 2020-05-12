@@ -5,6 +5,7 @@ First, you need the clone this repository. For do this use:
 `git clone https://github.com/victorkich/ReinforcementLearning-IK`
 
 To install all requirements, open repository folder and execute the following code:
+
 `cd new`
 
 `chmod 777 requirements.sh`
