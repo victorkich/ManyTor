@@ -81,27 +81,65 @@ class Environment():
         self.obj_number = obj_number
         self.actual_epoch = 0
         self.actual_step = 0
-        self.boolplot = [True for i in range(obj_number)]
+        self.goals = np.zeros(4)
     
     def get_observations(self):
-        return [0.0, 0.0, 0.0, 0.0]
-
-    def get_actions(self):
-        return [0, 1]
+        distances = np.array([])
+        for p in range(self.obj_number):
+            mod_dist = [(abs(self.joints_cordenates[3, i] - self.points[p, i])) for i in range(3)] # old self.points
+            euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[:, 0]**2 + mod_dist[:, 1]**2)**2 + mod_dist[:,2**2]))
+            distances = np.vstack((distances, euc_dist))
+        return distances  
 
     def is_done(self):
-        done = self.steps_left == 0
+        done = False
+        for p in range(self.obj_number):
+            validation_test = []
+            for a in range(3):
+                # Check if terminal (x, y and z) is close to each objective (x, y and z)
+                if(math.isclose(self.joints_cordenates[3, a], self.points[p, a], abs_tol=0.75)):
+                    validation_test.append(True)
+                else:
+                    validation_test.append(False)
+            # If the three cordenates is close, the point is reached
+            if all(validation_test):
+                #points[p, :] = 0.0
+                self.boolplot[p] = False
+
+        if self.boolplot.any() == False:
+            done = True
+
+        if not done:
+            done = self.steps_left == 0
         return done
 
     def action(self, action):
+        negative_reward = False
+
+        # Generating route to manipulator plot
+        route = np.linspace(self.goals, action, num=100)
+        for p in range(100):
+            self.goals = route[p, :]
+
+            # Modes -> 1 = first joint / 2 = second joint
+            #          3 = third joint / 4 = fourth joint
+            joints_cordenates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2,5)])
+            self.joints_cordenates = np.vstack((np.zeros(3), joints_cordenates)) # old self.df
+            self.trajectory = np.vstack((self.trajectory, self.joints_cordenates[3, :])) # old self.trajectory
+            if joints_cordenates[3, 2] < 0:
+                negative_reward = True
+            time.sleep(0.005)
+        
         if self.is_done():
             raise Exception("Game is Over")
 
         self.steps_left -= 1
 
         #reward vamos deixar por ultimo
-        reward = random.random()
-
+        if negative_reward:
+            reward = -1
+        else:
+            reward = random.random()
         return reward
 
     def action_sample(self):
@@ -109,35 +147,7 @@ class Environment():
         return sample
     
     def reset(self):
-        action = self.action_sample()
-        return action
-
-    def render(self):
-        pass
-
-    def trajectories(self): # old realtime
-        # Modes -> 1 = first joint / 2 = second joint
-        #          3 = third joint / 4 = fourth joint
-        joints_cordenates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2,5)])
-        joints_cordenates = np.vstack((np.zeros(3), joints_cordenates)) # old self.df
-        trajectory = np.vstack((trajectory, joints_cordenates[3, :])) # old self.trajectory
-        if joints_cordenates[3, 2] < 0:
-            negative_reward = True
-        return joints_cordenates, trajectory, negative_reward
-
-
-    def distances(self, plotpoints, joints_cordenates, points): # old distanced
-        if plotpoints: #old self.plotpoint
-            distances = np.array([])
-            for p in range(self.obj_number):
-                mod_dist = [(abs(joints_cordenates[3, i] - points[p, i])) for i in range(3)] # old self.points
-                euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[:, 0]**2 + mod_dist[:, 1]**2)**2 + mod_dist[:,2**2]))
-                distances = np.vstack((distances, euc_dist))
-            return distances
-
-            
-    def objectives_gen(self):
-        self.obj_remaining = self.obj_number
+        self.boolplot = np.array([True for i in range(self.obj_number)])
         points = np.array([])
 
         cont = 0
@@ -153,37 +163,12 @@ class Environment():
                     points = np.vstack((points, points_cordenates))
                     cont = cont + 1
         
-        return points
+        self.points = points
+        action = self.action_sample()
+        return action
 
-    def objectives_check(self, points, joints_cordenates):
-        done = False
-        plotpoints = True
-        
-        for p in range(self.obj_number):
-            validation_test = []
-            for a in range(3):
-                # Check if terminal (x, y and z) is close to each objective (x, y and z)
-                if(math.isclose(joints_cordenates[3, a], points[p, a], abs_tol=0.75)):
-                    validation_test.append(True)
-                else:
-                    validation_test.append(False)
-            # If the three cordenates is close, the point is reached
-            if all(validation_test):
-                points[p, :] = 0.0
-                self.boolplot[p] = False
-                self.obj_remaining -= 1
-        if self.distances(plotpoints, joints_cordenates, points).all() == 0.0:
-            done = True
-        
-        return done
-
-    def dataFlow(self, targ):
-        # Generating route to manipulator plot
-        route = np.linspace(self.goals, targ, num=100)
-        for t in range(100):
-            self.goals = route[t]
-            # <------- Rever
-            time.sleep(0.005)
+    def render(self):
+        pass
 
 class Agent():
     ''' This class control the data flow of the agent using the forward kinematics 
@@ -195,19 +180,12 @@ class Agent():
         self.env = environment
 
     def step(self, action):
+        obs = self.env.get_observations()
         reward = self.env.action(action)
-        current_obs = self.env.get_observations()
+        obs2 = self.env.get_observations()
         done = self.env.is_done()
         self.total_reward += reward
-        return reward, current_obs, done
-
-    def step(self, action):
-        obs = self.get_observation() #old self.distanced
-        self.dataFlow(action)
-        obs2 = self.get_observation()
-        done = self.objectives_check()
-        rew = self.get_reward()
-        return obs2, rew, done
+        return obs, obs2, reward, done
 
 
 ################################################################## CÓDIGO VELHO ##########################################################################
