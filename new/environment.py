@@ -81,7 +81,6 @@ class Environment():
         self.obj_number = obj_number
         self.actual_epoch = 0
         self.actual_step = 0
-        self.goals = np.zeros(4)
     
     def get_observations(self):
         distances = np.array([])
@@ -147,7 +146,9 @@ class Environment():
         return sample
     
     def reset(self):
+        self.goals = np.zeros(4)
         self.boolplot = np.array([True for i in range(self.obj_number)])
+        self.trajectory = np.array([])
         points = np.array([])
 
         cont = 0
