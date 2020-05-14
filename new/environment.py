@@ -13,7 +13,7 @@ import modin.pandas as pdm
 
 
 def deg2rad(deg):
-	"""Convert angles from degress to radians.
+	"""Convert angles from degrees to radians.
 	"""
 	return np.pi * deg / 180.0
 
@@ -33,11 +33,10 @@ def dh(a, alfa, d, theta):
 def fk(mode, goals):
 	"""Forward Kinematics.
 	"""
-	# Convert angles from degress to radians
+	# Convert angles from degrees to radians
 	t = [deg2rad(x) for x in goals]
 	# Register the DH parameters
-	hs = []
-	hs.append(dh(0, -np.pi / 2, 4.3, t[0]))
+	hs = [dh(0, -np.pi / 2, 4.3, t[0])]
 	if mode >= 2:
 		hs.append(dh(0, np.pi / 2, 0.0, t[1]))
 	if mode >= 3:
@@ -81,14 +80,14 @@ class Environment:
 		self.goals = np.zeros(4)
 		self.boolplot = np.array([True for i in range(self.obj_number)])
 		self.trajectory = np.array([])
-		self.joints_cordenates = np.array([])
+		self.joints_coordinates = np.array([])
 		self.points = np.array([])
 
 	def get_observations(self):
 		distances = np.array([])
 		for p in range(self.obj_number):
 			mod_dist = np.array(
-				[(abs(self.joints_cordenates[3, i] - self.points[p, i])) for i in range(3)])  # old self.points
+				[(abs(self.joints_coordinates[3, i] - self.points[p, i])) for i in range(3)])  # old self.points
 			euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[:, 0] ** 2 + mod_dist[:, 1] ** 2) ** 2 + mod_dist[:, 2] ** 2))
 			distances = np.vstack((distances, euc_dist))
 		return distances
@@ -99,11 +98,11 @@ class Environment:
 			validation_test = []
 			for a in range(3):
 				# Check if terminal (x, y and z) is close to each objective (x, y and z)
-				if math.isclose(self.joints_cordenates[3, a], self.points[p, a], abs_tol=0.75):
+				if math.isclose(self.joints_coordinates[3, a], self.points[p, a], abs_tol=0.75):
 					validation_test.append(True)
 				else:
 					validation_test.append(False)
-			# If the three cordenates is close, the point is reached
+			# If the three coordinates is close, the point is reached
 			if all(validation_test):
 				# points[p, :] = 0.0
 				self.boolplot[p] = False
@@ -125,10 +124,10 @@ class Environment:
 
 			# Modes -> 1 = first joint / 2 = second joint
 			#          3 = third joint / 4 = fourth joint
-			joints_cordenates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2, 5)])
-			self.joints_cordenates = np.vstack((np.zeros(3), joints_cordenates))  # old self.df
-			self.trajectory = np.vstack((self.trajectory, self.joints_cordenates[3, :]))  # old self.trajectory
-			if self.joints_cordenates[3, 2] < 0:
+			joints_coordinates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2, 5)])
+			self.joints_coordinates = np.vstack((np.zeros(3), joints_coordinates))  # old self.df
+			self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[3, :]))  # old self.trajectory
+			if self.joints_coordinates[3, 2] < 0:
 				negative_reward = True
 			time.sleep(0.005)
 
@@ -155,14 +154,14 @@ class Environment:
 		cont = 0
 		while cont < self.obj_number:
 			# Generating points
-			points_cordenates = [np.random.uniform(-51.3, 51.3) for i in range(3)]
-			if points_cordenates[2] >= 0:
-				# Spheric formule
+			points_coordinates = [np.random.uniform(-51.3, 51.3) for i in range(3)]
+			if points_coordinates[2] >= 0:
+				# Sphere formula
 				value = math.sqrt(
-					math.sqrt(points_cordenates[0] ** 2 + points_cordenates[1] ** 2) ** 2 + points_cordenates[2] ** 2)
+					math.sqrt(points_coordinates[0] ** 2 + points_coordinates[1] ** 2) ** 2 + points_coordinates[2] ** 2)
 				if value <= 51.3:
 					# Check distance in relation of the center
-					points = np.vstack((points, points_cordenates))
+					points = np.vstack((points, points_coordinates))
 					cont = cont + 1
 
 		self.points = points
