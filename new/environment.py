@@ -2,16 +2,14 @@ import threading
 import numpy as np
 import pandas as pd
 import time
-import random
 import math
-from tqdm import tqdm
 import vispy
 import os
 os.environ["MODIN_ENGINE"] = "ray"
 import modin.pandas as pdm
 import matplotlib.pyplot as plt
 
-############################################################### FUNÇÕES TOP #########################################################################
+############################################## FUNÇÕES TOP #########################################################
 
 def deg2rad(deg):
     ''' Convert angles from degress to radians
@@ -53,7 +51,7 @@ def fk(mode, goals):
         m = m.dot(h)
     return m
 
-######################################################################## CÓDIGO NOVO #############################################################################
+########################################## CÓDIGO NOVO ############################################################
 
 class Multienv():
   ''' Function for start and render multiples Environments with our respectives
@@ -138,7 +136,7 @@ class Environment():
         if negative_reward:
             reward = -1
         else:
-            reward = random.random()
+            reward = np.random.random()
         return reward
 
     def action_sample(self):
@@ -154,7 +152,7 @@ class Environment():
         cont = 0
         while cont < self.obj_number:
             # Generating points
-            points_cordenates = [random.uniform(-51.3, 51.3) for i in range(3)]
+            points_cordenates = [np.random.uniform(-51.3, 51.3) for i in range(3)]
             if points_cordenates[2] >= 0:
                 # Spheric formule
                 value = math.sqrt(math.sqrt(points_cordenates[0]**2 + \
@@ -189,7 +187,7 @@ class Agent():
         return obs, obs2, reward, done
 
 
-################################################################## CÓDIGO VELHO ##########################################################################
+############################################## CÓDIGO VELHO ###########################################################
 
 fig = plt.figure()
 
