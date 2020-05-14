@@ -1,3 +1,5 @@
-Thread -> Transformar em 3 Funções realtime, objectives e distanced
+Thread -> Transformar em 3 Funções realtime, objectives e distance
 Step -> Arrumar a função e consequentemente remover ctarget e dataflow
 Animate -> matplotlib para vispy
+
+Tem que fazer o get_reward(), melhorar o get_observations() e depois vazer o animate()
