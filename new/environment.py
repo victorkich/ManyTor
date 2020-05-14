@@ -11,17 +11,7 @@ import modin.pandas as pdm
 
 #-------------------------------------------------FUNCOES TOP-----------------------------------------------------------
 
-def ang_tg(pg,pb):
-    
-    xgp = pg[0] - pb[0]
-    ygp = pg[1] - pb[1]
-    xgp = pg[2] - pb[2]
-    
-    axy = np.arctg(ygp/xgp)
-    azx = np.arctg(zgp/xgp)
-    return axy, azx
-
-def angulos(v1, v2):
+def r_t(v1, v2):
 	d = [abs(v1[i] - v2[i]) for i in range(3)]
 	h_l = math.sqrt(d[0]**2 + d[1]**2)
 	r = math.degrees(math.atan2(d[0],d[1]))
@@ -31,12 +21,10 @@ def angulos(v1, v2):
 def dh(a, alfa, d, theta):
 	"""Builds the Homogeneous Transformation matrix	corresponding to each line of the Denavit-Hartenberg parameters.
 	"""
-	m = np.array([
-		[np.cos(theta), -np.sin(theta) * np.cos(alfa), np.sin(theta) * np.sin(alfa), a * np.cos(theta)],
+	m = np.array([[np.cos(theta), -np.sin(theta) * np.cos(alfa), np.sin(theta) * np.sin(alfa), a * np.cos(theta)],
 		[np.sin(theta), np.cos(theta) * np.cos(alfa), -np.cos(theta) * np.sin(alfa), a * np.sin(theta)],
 		[0, np.sin(alfa), np.cos(alfa), d],
-		[0, 0, 0, 1]
-	])
+		[0, 0, 0, 1]])
 	return m
 
 def fk(mode, goals):
@@ -100,18 +88,14 @@ class Environment:
 				[(abs(self.joints_coordinates[3, i] - self.points[p, i])) for i in range(3)])  # old self.points
 			euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[:, 0] ** 2 + mod_dist[:, 1] ** 2) ** 2 + mod_dist[:, 2] ** 2))
 			distances = np.vstack((distances, euc_dist))
-
-		v1 = self.joints_coordinates[3,:]
-		for i in range(self.obj_number):	
+		
+		v1 = self.joints_coordinates[3, :]
+		obs = np.array([])
+		obs = np.vstack((obs, distances))
+		for p in range(self.obj_number):
 			v2 = self.points[p, :]
-			n1 = math.sqrt(x1**2 + y1**2 + z1**2) #norma do ponto 1
-			n2 = math.sqrt(x2**2 + y2**2+ z2**2) #norma ponto 2
-			norma = n1 * n2 
-			internal_product = np.dot(v1,v2)
-			angle = 1/(internal_product/norma)
+			obs = obs.vstack((obs, r_t(v1, v2)))
 		
-		
-		obs = 0
 		return obs
 
 	def is_done(self):
