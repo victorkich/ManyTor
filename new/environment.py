@@ -1,13 +1,8 @@
 import threading
 import numpy as np
-import pandas as pd
 import time
 import math
 import vispy
-import os
-os.environ["MODIN_ENGINE"] = "ray"
-import modin.pandas as pdm
-
 
 #-------------------------------------------------FUNCOES TOP-----------------------------------------------------------
 
