@@ -1,7 +1,8 @@
 import numpy as np
 import time
 import math
-#import vispy
+from vispy import app, gloo, visuals
+import sys
 
 
 def r_theta(v1, v2):
@@ -207,3 +208,19 @@ class Environment:
 	self.ax.set_ylim([-60, 60])
 	self.ax.set_zlim([0, 60])
 """
+class Canvas(app.Canvas):
+	def __init__(self):
+		app.Canvas.__init__(self, keys='interactive')
+
+	def on_resize(self, event):
+        width, height = event.size
+        gloo.set_viewport(0, 0, width, height)
+
+    def on_draw(self, event):
+        gloo.clear('white')
+        self.program.draw('points')
+
+if __name__ == '__main__':
+    c = Canvas()
+    if sys.flags.interactive != 1:
+        app.run()

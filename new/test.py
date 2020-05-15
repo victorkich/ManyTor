@@ -1,13 +1,13 @@
 import manipulator as tor
 import time
 
-tempo = time.time()
 obj_number = 5
 env = tor.Environment(obj_number)
 obs = env.reset(True)
 print('Observation 1: '+ str(obs))
 epoch = 0
 epocas = []
+tempo = time.time()
 for i in range(20):
     epoch += 1
     print('Epoch:', epoch)
