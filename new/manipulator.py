@@ -1,7 +1,7 @@
 import numpy as np
 import time
 import math
-import vispy
+#import vispy
 
 
 def r_theta(v1, v2):
@@ -27,6 +27,7 @@ def fk(mode, goals):
 	"""
 	# Convert angles from degrees to radians
 	t = [math.radians(x) for x in goals]
+
 	# Register the DH parameters
 	hs = [dh(0, -np.pi / 2, 4.3, t[0])]
 	if mode >= 2:
@@ -44,11 +45,11 @@ def fk(mode, goals):
 
 class Multienv:
 	"""Function for start and render multiples Environments with our respective individual Agents. Therefore, start
-		this sending: [agent_number:tuple, max_steps:int, obj_number:int]
+		this sending: [agent_number:tuple, obj_number:int]
 	"""
 
-	def __init__(self, env_number, max_steps, obj_number):
-		self.environment = [Environment(max_steps, obj_number) for i in range(env_number)]
+	def __init__(self, env_number, obj_number):
+		self.environment = [Environment(obj_number) for i in range(env_number)]
 
 	def render(self):
 		for env in self.environment:
@@ -56,35 +57,32 @@ class Multienv:
 
 
 class Environment:
-	"""Start environment sending [max_steps:int, obj_number:int]. If you want to create a custom model for your own
+	"""Start environment sending [obj_number:int]. If you want to create a custom model for your own
 		manipulator change the get_action(self) and get_observation(self) functions.
 	"""
 
-	def __init__(self, max_steps, obj_number):
-		self.steps_left = max_steps
-		self.max_steps = max_steps
+	def __init__(self, obj_number):
 		self.obj_number = obj_number
 		self.actual_epoch = 0
 		self.actual_step = 0
 		self.goals = np.zeros(4)
 		self.alives = np.array([True for i in range(self.obj_number)])
-		self.trajectory = np.array([])
+		self.trajectory = np.array([0.0, 0.0, 51.3])
 		self.joints_coordinates = np.array([])
 		self.points = np.array([])
 		self.total_reward = 0.0
 
 	def get_observations(self):
 		obs = np.array([])
-		j_c = self.joints_coordinates[3, :]
+		j_c = self.joints_coordinates[2, :]
 		for p in range(self.obj_number):
 			# Computing all distances between the terminal and the objective points.
-			if self.alives[p]:
+			if not self.alives[p]:
 				obs = np.concatenate((obs, [0.0, 0.0, 0.0]), axis=0)
 			else:
-				mod_dist = np.array(
-					[(abs(j_c[i] - self.points[p, i])) for i in range(3)])
-				euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[:, 0] ** 2 + mod_dist[:, 1] ** 2) ** 2 + mod_dist[:, 2] ** 2))
-				obs = np.concatenate((obs, euc_dist, r_theta(j_c, self.points[p, :])), axis=0)
+				mod_dist = np.array([(abs(j_c[i] - self.points[p, i])) for i in range(3)])
+				euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[0] ** 2 + mod_dist[1] ** 2) ** 2 + mod_dist[2] ** 2))
+				obs = np.concatenate((obs, [euc_dist], r_theta(j_c, self.points[p, :])), axis=0)
 		return obs
 
 	def is_done(self):
@@ -94,7 +92,7 @@ class Environment:
 			validation_test = []
 			for a in range(3):
 				# Check if terminal (x, y and z) is close to each objective (x, y and z)
-				if math.isclose(self.joints_coordinates[3, a], self.points[p, a], abs_tol=0.75):
+				if math.isclose(self.joints_coordinates[2, a], self.points[p, a], abs_tol=0.75):
 					validation_test.append(True)
 				else:
 					validation_test.append(False)
@@ -105,8 +103,6 @@ class Environment:
 		if not self.alives.any():
 			done = True
 
-		if not done:
-			done = self.steps_left == 0
 		return done
 
 	def action(self, action, obs):
@@ -121,10 +117,10 @@ class Environment:
 			#          3 = third joint / 4 = fourth joint
 			joints_coordinates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2, 5)])
 			self.joints_coordinates = np.vstack((np.zeros(3), joints_coordinates))
-			self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[3, :]))
+			self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[2, :]))
 			if self.joints_coordinates[3, 2] < 0:
 				negative_reward = True
-			time.sleep(0.005)
+			#time.sleep(0.005)
 
 		obs2 = self.get_observations()
 		ob = obs[::3]
@@ -134,19 +130,20 @@ class Environment:
 		reward = np.tanh(min_dist - min_dist2)
 		if negative_reward:
 			reward = -1
-		self.steps_left -= 1
 		return reward, obs2
 
 	def action_sample(self):
 		sample = [np.random.randint(low=-180, high=180, size=1)[0] for i in range(4)]
 		return sample
 
-	def reset(self):
+	def reset(self, returnable = False):
 		self.goals = np.zeros(4)
-		self.steps_left = self.max_steps
+		self.total_reward = 0.0
 		self.alives = np.array([True for i in range(self.obj_number)])
-		self.trajectory = np.array([])
-		points = np.array([])
+		self.trajectory = np.array([0.0, 0.0, 51.3])
+		joints_coordinates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2, 5)])
+		self.joints_coordinates = np.vstack((np.zeros(3), joints_coordinates))
+		points = np.zeros(3)
 
 		cont = 0
 		while cont < self.obj_number:
@@ -161,23 +158,24 @@ class Environment:
 					points = np.vstack((points, points_coordinates))
 					cont = cont + 1
 
-		self.points = points
+		self.points = points[1:, :]
 		obs = self.get_observations()
-		return obs
+
+		if returnable:
+			return obs
 	
 	def step(self, action):
 		obs = self.get_observations()
 		reward, obs2 = self.action(action, obs)
-		done = self.is_done()
 		self.total_reward += reward
+		done = self.is_done()
 		return obs2, reward, done
 	
 	def render(self):
 		pass
 
 
-'''
-def animate(self, i):
+"""def animate(self, i):
 	x, y, z = [np.array(i) for i in [self.df.x, self.df.y, self.df.z]]
 	self.ax.clear()
 	self.ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
@@ -208,4 +206,4 @@ def animate(self, i):
 	self.ax.set_xlim([-60, 60])
 	self.ax.set_ylim([-60, 60])
 	self.ax.set_zlim([0, 60])
-'''
+"""
