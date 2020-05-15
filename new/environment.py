@@ -1,17 +1,16 @@
-import threading
 import numpy as np
 import time
 import math
 import vispy
 
-#-------------------------------------------------FUNCOES TOP-----------------------------------------------------------
 
-def r_t(v1, v2):
+def r_theta(v1, v2):
 	d = [abs(v1[i] - v2[i]) for i in range(3)]
 	h_l = math.sqrt(d[0]**2 + d[1]**2)
-	r = math.degrees(math.atan2(d[0],d[1]))
-	theta = math.degrees(math.atan2(h_l,d[2]))
+	r = math.degrees(math.atan2(d[0], d[1]))
+	theta = math.degrees(math.atan2(h_l, d[2]))
 	return r, theta
+
 
 def dh(a, alfa, d, theta):
 	"""Builds the Homogeneous Transformation matrix	corresponding to each line of the Denavit-Hartenberg parameters.
@@ -21,6 +20,7 @@ def dh(a, alfa, d, theta):
 		[0, np.sin(alfa), np.cos(alfa), d],
 		[0, 0, 0, 1]])
 	return m
+
 
 def fk(mode, goals):
 	"""Forward Kinematics.
@@ -42,17 +42,13 @@ def fk(mode, goals):
 	return m
 
 
-#-------------------------------------------------CÓDIGO NOVO-----------------------------------------------------------
-
-
 class Multienv:
 	"""Function for start and render multiples Environments with our respective individual Agents. Therefore, start
 		this sending: [agent_number:tuple, max_steps:int, obj_number:int]
 	"""
 
-	def __init__(self, agent_number, max_steps, obj_number):
-		self.environment = [Environment(max_steps, obj_number) for i in range(agent_number)]
-		self.agent = [Agent(self.environment[i]) for i in range(agent_number)]
+	def __init__(self, env_number, max_steps, obj_number):
+		self.environment = [Environment(max_steps, obj_number) for i in range(env_number)]
 
 	def render(self):
 		for env in self.environment:
@@ -66,31 +62,29 @@ class Environment:
 
 	def __init__(self, max_steps, obj_number):
 		self.steps_left = max_steps
+		self.max_steps = max_steps
 		self.obj_number = obj_number
 		self.actual_epoch = 0
 		self.actual_step = 0
 		self.goals = np.zeros(4)
-		self.boolplot = np.array([True for i in range(self.obj_number)])
+		self.alives = np.array([True for i in range(self.obj_number)])
 		self.trajectory = np.array([])
 		self.joints_coordinates = np.array([])
 		self.points = np.array([])
+		self.total_reward = 0.0
 
 	def get_observations(self):
-		distances = np.array([])
+		obs = np.array([])
+		j_c = self.joints_coordinates[3, :]
 		for p in range(self.obj_number):
 			# Computing all distances between the terminal and the objective points.
-			mod_dist = np.array(
-				[(abs(self.joints_coordinates[3, i] - self.points[p, i])) for i in range(3)])  # old self.points
-			euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[:, 0] ** 2 + mod_dist[:, 1] ** 2) ** 2 + mod_dist[:, 2] ** 2))
-			distances = np.vstack((distances, euc_dist))
-		
-		v1 = self.joints_coordinates[3, :]
-		obs = np.array([])
-		obs = np.vstack((obs, distances))
-		for p in range(self.obj_number):
-			v2 = self.points[p, :]
-			obs = obs.vstack((obs, r_t(v1, v2)))
-		
+			if self.alives[p]:
+				obs = np.concatenate((obs, [0.0, 0.0, 0.0]), axis=0)
+			else:
+				mod_dist = np.array(
+					[(abs(j_c[i] - self.points[p, i])) for i in range(3)])
+				euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[:, 0] ** 2 + mod_dist[:, 1] ** 2) ** 2 + mod_dist[:, 2] ** 2))
+				obs = np.concatenate((obs, euc_dist, r_theta(j_c, self.points[p, :])), axis=0)
 		return obs
 
 	def is_done(self):
@@ -106,10 +100,9 @@ class Environment:
 					validation_test.append(False)
 			# If the three coordinates is close, the point is reached
 			if all(validation_test):
-				# points[p, :] = 0.0
-				self.boolplot[p] = False
+				self.alives[p] = False
 
-		if not self.boolplot.any():
+		if not self.alives.any():
 			done = True
 
 		if not done:
@@ -127,19 +120,21 @@ class Environment:
 			# Modes -> 1 = first joint / 2 = second joint
 			#          3 = third joint / 4 = fourth joint
 			joints_coordinates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2, 5)])
-			self.joints_coordinates = np.vstack((np.zeros(3), joints_coordinates))  # old self.df
-			self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[3, :]))  # old self.trajectory
+			self.joints_coordinates = np.vstack((np.zeros(3), joints_coordinates))
+			self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[3, :]))
 			if self.joints_coordinates[3, 2] < 0:
 				negative_reward = True
 			time.sleep(0.005)
 
 		obs2 = self.get_observations()
-
-		if self.is_done():
-			raise Exception("Game is Over")
-
+		ob = obs[::3]
+		ob2 = obs2[::3]
+		min_dist = min([ob[i] for i in range(ob.size) if (ob > 0)[i]])
+		min_dist2 = min([ob2[i] for i in range(ob2.size) if (ob2 > 0)[i]])
+		reward = np.tanh(min_dist - min_dist2)
+		if negative_reward:
+			reward = -1
 		self.steps_left -= 1
-		reward = self.get_reward(obs, obs2, negative_reward)
 		return reward, obs2
 
 	def action_sample(self):
@@ -148,7 +143,8 @@ class Environment:
 
 	def reset(self):
 		self.goals = np.zeros(4)
-		self.boolplot = np.array([True for i in range(self.obj_number)])
+		self.steps_left = self.max_steps
+		self.alives = np.array([True for i in range(self.obj_number)])
 		self.trajectory = np.array([])
 		points = np.array([])
 
@@ -168,36 +164,17 @@ class Environment:
 		self.points = points
 		obs = self.get_observations()
 		return obs
-
-	def get_reward(self, obs, obs2, negative_reward):
-		min_dist = min(obs[:self.obj_number])
-		min_dist2 = min(obs2[:self.obj_number])
-		reward = np.tanh(min_dist-min_dist2)
-		if negative_reward:
-			reward = -1
-		return reward
+	
+	def step(self, action):
+		obs = self.get_observations()
+		reward, obs2 = self.action(action, obs)
+		done = self.is_done()
+		self.total_reward += reward
+		return obs2, reward, done
 	
 	def render(self):
 		pass
 
-class Agent:
-	"""This class control the data flow of the agent using the forward kinematics	functions. If you want to create a
-		custom model for your own manipulator change the forward kinematics function.
-	"""
-
-	def __init__(self, environment):
-		self.total_reward = 0.0
-		self.env = environment
-
-	def step(self, action):
-		obs = self.env.get_observations()
-		reward, obs2 = self.env.action(action, obs)
-		done = self.env.is_done()
-		self.total_reward += reward
-		return obs, obs2, reward, done
-
-
-# ------------------------------------------------------CÓDIGO VELHO---------------------------------------------------
 
 '''
 def animate(self, i):
