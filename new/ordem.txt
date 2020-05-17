@@ -1,2 +1,0 @@
-Animate -> matplotlib para vispy.
-Criar classe Canvas para fazer s funcoes de plot.

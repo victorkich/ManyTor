@@ -1,9 +1,30 @@
+from subprocess import call
 import numpy as np
+import threading
+import socket
 import time
 import math
-from vispy import app, gloo, visuals
-import sys
 
+HOST = 'localhost'     # Endereco IP do Servidor
+PORT = 5005          # Porta que o Servidor esta
+
+class StoppableThread(threading.Thread):
+    """Thread class with a stop() method. The thread itself has to check
+    regularly for the stopped() condition."""
+
+    def __init__(self,  *args, **kwargs):
+        super(StoppableThread, self).__init__(*args, **kwargs)
+        self._stop_event = threading.Event()
+
+    def stop(self):
+        self._stop_event.set()
+
+    def stopped(self):
+        return self._stop_event.is_set()
+
+
+def plot_vispy():
+    call(["python3", "plotting.py"])
 
 def r_theta(v1, v2):
 	d = [abs(v1[i] - v2[i]) for i in range(3)]
@@ -72,6 +93,7 @@ class Environment:
 		self.joints_coordinates = np.array([])
 		self.points = np.array([])
 		self.total_reward = 0.0
+		self.rendering = False
 
 	def get_observations(self):
 		obs = np.array([])
@@ -121,7 +143,12 @@ class Environment:
 			self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[2, :]))
 			if self.joints_coordinates[3, 2] < 0:
 				negative_reward = True
-			#time.sleep(0.005)
+
+			# Send to vispy
+			if self.rendering:
+				msg = str.encode(str(p))
+				self.udp.sendto(msg, self.dest)
+				time.sleep(0.001)
 
 		obs2 = self.get_observations()
 		ob = obs[::3]
@@ -172,6 +199,21 @@ class Environment:
 		done = self.is_done()
 		return obs2, reward, done
 	
+<<<<<<< HEAD
+	def render(self, stop_render=False):
+		if not stop_render:
+			self.processThread = StoppableThread(target=plot_vispy)
+			self.processThread.start()
+			self.rendering = True
+			self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+			self.dest = (HOST, PORT)
+		else:
+			msg = str.encode('close')
+			self.udp.sendto(msg, self.dest)
+			time.sleep(0.5)
+			self.udp.close()
+			self.processThread.stop()
+=======
 	def render(self):
 		pass
 
@@ -208,3 +250,4 @@ class Environment:
 	self.ax.set_ylim([-60, 60])
 	self.ax.set_zlim([0, 60])
 """
+>>>>>>> 797d527a669cd7a0077d3682c05cf7755de1a2c1
