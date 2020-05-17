@@ -6,7 +6,7 @@ import time
 import math
 
 HOST = 'localhost'     # Endereco IP do Servidor
-PORT = 5005          # Porta que o Servidor esta
+PORT = 5000            # Porta que o Servidor esta
 
 class StoppableThread(threading.Thread):
     """Thread class with a stop() method. The thread itself has to check
@@ -146,7 +146,9 @@ class Environment:
 
 			# Send to vispy
 			if self.rendering:
-				msg = str.encode(str(p))
+				shapes = [self.joints_coordinates.shape[0], self.points.shape[0], 1 if self.trajectory.shape[0] == 1 else 0]
+				raw_msg = np.vstack((shapes, self.joints_coordinates, self.points, self.trajectory[-1, :]))
+				msg = bytes(raw_msg)
 				self.udp.sendto(msg, self.dest)
 				time.sleep(0.001)
 
@@ -199,7 +201,6 @@ class Environment:
 		done = self.is_done()
 		return obs2, reward, done
 	
-<<<<<<< HEAD
 	def render(self, stop_render=False):
 		if not stop_render:
 			self.processThread = StoppableThread(target=plot_vispy)
@@ -213,41 +214,3 @@ class Environment:
 			time.sleep(0.5)
 			self.udp.close()
 			self.processThread.stop()
-=======
-	def render(self):
-		pass
-
-
-"""def animate(self, i):
-	x, y, z = [np.array(i) for i in [self.df.x, self.df.y, self.df.z]]
-	self.ax.clear()
-	self.ax.plot3D(x, y, z, 'gray', label='Links', linewidth=5)
-	self.ax.scatter3D(x, y, z, color='black', label='Joints')
-	self.ax.scatter3D(x[3], y[3], zs=0, zdir='z', label='Projection', color='red')
-	# self.ax.scatter3D(0, 0, 4.3, plotnonfinite=False, s=135000, norm=1, alpha=0.2, lw=0)
-	x, y, z = [np.array(i) for i in [self.trajectory.x, self.trajectory.y, self.trajectory.z]]
-	self.ax.plot3D(x, y, z, c='b', label='Trajectory')
-
-	if self.plotpoints == True:
-		x, y, z, = [], [], []
-		n_x, n_y, n_z = [np.array(i) for i in [self.points.x, self.points.y, self.points.z]]
-		for i in range(self.obj_number[0]):
-			if self.boolplot[i]:
-				x.append(n_x[i])
-				y.append(n_y[i])
-				z.append(n_z[i])
-
-		legend = 'Objectives: ' + str(self.obj_remaining[0]) + '/' + str(self.obj_number[0])
-		self.ax.scatter3D(x, y, z, color='green', label=legend)
-
-	title = 'Epoch: ' + str(self.actual_epoch) + ' Step: ' + str(self.actual_step)
-	self.ax.set_title(title, size=10)
-	self.ax.legend(loc=2, prop={'size': 7})
-	self.ax.set_xlabel('x')
-	self.ax.set_ylabel('y')
-	self.ax.set_zlabel('z')
-	self.ax.set_xlim([-60, 60])
-	self.ax.set_ylim([-60, 60])
-	self.ax.set_zlim([0, 60])
-"""
->>>>>>> 797d527a669cd7a0077d3682c05cf7755de1a2c1
