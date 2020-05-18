@@ -10,7 +10,7 @@ epocas = []
 tempo = time.time()
 for i in range(3):
 	epoch += 1
-	print('Epoch:', epoch)
+	#print('Epoch:', epoch)
 	time_epoch = time.time()
 	for p in range(50):
 		action = env.action_sample()

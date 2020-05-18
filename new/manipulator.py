@@ -147,10 +147,10 @@ class Environment:
 			# Send to vispy
 			if self.rendering:
 				shapes = [self.joints_coordinates.shape[0], self.points.shape[0], 1 if self.trajectory.shape[0] == 1 else 0]
-				raw_msg = np.vstack((shapes, self.joints_coordinates, self.points, self.trajectory[-1, :]))
-				msg = bytes(raw_msg)
+				msg = np.vstack((shapes, self.joints_coordinates, self.points, self.trajectory[-1, :]))
+				msg = msg.tobytes()
 				self.udp.sendto(msg, self.dest)
-				time.sleep(0.001)
+				time.sleep(0.0015)
 
 		obs2 = self.get_observations()
 		ob = obs[::3]
