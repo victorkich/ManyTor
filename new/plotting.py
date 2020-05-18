@@ -16,7 +16,7 @@ udp.bind(orig)
 
 joints_coordinates = np.array([tor.fk(mode=i, goals=np.zeros(4))[0:3, 3] for i in range(2, 5)])
 joints_coordinates = np.vstack((np.zeros(3), joints_coordinates))
-points = np.array([])
+points = np.array([[4.,5.,0.]])
 trajectory = np.array([0.0, 0.0, 51.3])
 
 def receive_data(udp):
@@ -25,17 +25,18 @@ def receive_data(udp):
 	global trajectory
 
 	while True:
-		msg_byte, _ = udp.recvfrom(1024)
+		msg_byte, _ = udp.recvfrom(2048)
 		msg = np.frombuffer(msg_byte, dtype=np.float64)
 		msg = np.array(msg.tolist())
 		msg = msg.reshape(-1, 3)
 		shapes = msg[0, :]
 		joints_coordinates = msg[1:int(shapes[0]),:]
-		points = msg[int(shapes[0]):int(shapes[0]+shapes[1]), :]
+		points = np.array(msg[int(shapes[0]):int(shapes[0]+shapes[1]), :])
 		if int(shapes[2]):
 			trajectory = np.array([0.0, 0.0, 51.3])
 		trajectory = np.vstack((trajectory, msg[int(shapes[0]+shapes[1]):, :]))
-		print(msg)
+		#print(point)
+		print(joints_coordinates)
 		
 		if msg == 'close':
 			app.quit()
@@ -55,50 +56,26 @@ camera.set_range((-4,4), (-4,4), (-4,4))
 view.camera = camera
 #xax = scene.Axis()
 axis = visuals.XYZAxis(parent=view.scene)
-grid = visuals.GridLines(parent=view.scene)
+#grid = visuals.GridLines(parent=view.scene)
 
 point = visuals.Markers()
 joint = visuals.LinePlot()
+joint2 = visuals.LinePlot()
+traject = visuals.Markers()
 
 view.add(point)
 view.add(joint)
+view.add(joint2)
 view.add(axis)
-
-
-
-
-'''
-grid = visuals.GridLines()
-joint_base = visuals.LinePlot(parent=view.scene)
-joint_one = visuals.LinePlot(parent=joint_base)
-joint_two = visuals.LinePlot(parent=joint_one)
-joint_three = visuals.LinePlot(parent=joint_two)
-
-view.add(grid)
-view.add(joint_base)
-view.add(joint_one)
-view.add(joint_two)
-view.add(joint_three)
-'''
+view.add(traject)
 
 timer = app.Timer()
 def update(ev):
-	'''
-	print('Update Coordinates: ')
-	print('Coordinates[0]: ', joints_coordinates[0, :])
-	print('Coordinates[1]: ', joints_coordinates[1, :])
-	print('Coordinates[2]: ', joints_coordinates[2, :])
-	print('Coordinates[3]: ', joints_coordinates[3, :])
-	'''
-	print('Points: ', points)
-	joint.set_data(data=joints_coordinates, color='gray', marker_size='10', width='20.0', face_color='red', edge_color='white')
-	point.set_data(data=points, edge_color='green', face_color=(1, 1, 1, .5), size=10)
+	#traject.set_data(trajectory, edge_color='w', face_color='blue', size=1)
+	point.set_data(points, edge_color='w', face_color='green', size=3)
 
-	#joint_base.set_data(data=joints_coordinates[0], color='gray', marker_size='10', width='20.0', face_color='red', edge_color='white')
-	#joint_one.set_data(data=joints_coordinates[1], color='blue', marker_size='10', width='4') #parent=joint_base, 
-	#joint_two.set_data(data=joints_coordinates[2], color='red', marker_size='10', width='4')
-	#joint_three.set_data(data=joints_coordinates[3], color='green', marker_size='10', width='4')
-	#scatter_j.set_data(joints_coordinates, edge_color=None, face_color=(1, 1, 1, .5), size=10) #deu certo?
+	joint.set_data(data=joints_coordinates, color='gray', marker_size='5', width='20.0', face_color='red', edge_color='white')
+	joint2.set_data(data=j2, color='blue', marker_size='5', width='20.0', face_color='white', edge_color='white')
 
 timer.connect(update)
 timer.start(0)
