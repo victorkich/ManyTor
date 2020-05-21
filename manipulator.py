@@ -4,6 +4,7 @@ import threading
 import socket
 import time
 import math
+import json
 
 HOST = 'localhost'     # Server ip address
 PORT = 5003            # Server port
@@ -74,20 +75,49 @@ class Multienv:
     """
 
     def __init__(self, env_number, obj_number):
-        self.environment = [Environment(obj_number=obj_number, id=i) for i in range(env_number)]
+        self.env_number = env_number
+        self.obj_number = obj_number
+        self.environment = [Environment(obj_number=obj_number, index=i, env_number=env_number) for i in range(env_number)]
 
     def render(self, stop_render=False):
+        if not stop_render:
+            self.processThread = StoppableThread(target=plot_vispy)
+            self.processThread.start()
         for env in self.environment:
-            env.render(stop_render=stop_render)
+            env.render(stop_render=stop_render, multienv=True)
+        self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.dest = (HOST, PORT)
+        if not stop_render:
+            msg = np.array([self.env_number, self.obj_number, 3]).tobytes()
+            self.udp.sendto(msg, self.dest)
+        else:
+            msg = np.array([np.nan, np.nan, 2]).tobytes()
+            self.udp.sendto(msg, self.dest)
+            time.sleep(0.25)
+            self.udp.close()
+            self.processThread.stop()
 
+    def reset(self, returnable=False):
+        obs = [self.environment[i].reset(returnable=returnable) for i in range(self.env_number)]
+        if returnable:
+            return obs
+
+    def action_sample(self):
+        action_sample = [self.environment[i].action_sample() for i in range(self.env_number)]
+        return action_sample
+
+    def step(self, action):
+        obs2, reward, done = [self.environment[i].step(action[i]) for i in range(self.env_number)]
+        return obs2, reward, done
 
 class Environment:
     """Start environment sending [obj_number:int]. If you want to create a custom model for your own
         manipulator change the get_action(self) and get_observation(self) functions.
     """
 
-    def __init__(self, obj_number=10, id=1):
-        self.ID = id
+    def __init__(self, obj_number=10, index=0, env_number=1):
+        self.id = index
+        self.env_number = env_number
         self.obj_number = obj_number
         self.goals = np.zeros(4)
         self.alives = np.array([True for i in range(self.obj_number)])
@@ -132,7 +162,7 @@ class Environment:
 
     def action(self, action, obs):
         negative_reward = False
-        index = [self.ID, self.obj_number, 1]
+        index = [self.id, np.nan, 1]
         
         # Generating route to manipulator plot
         route = np.linspace(self.goals, action, num=100)
@@ -150,9 +180,11 @@ class Environment:
             # Send to vispy
             if self.rendering:
                 index[2] = 1 if self.trajectory.size == 3 else 0
-                msg = np.vstack((index, self.joints_coordinates, self.points, self.trajectory[-1, :]))
-                msg = msg.tobytes()
-                self.udp.sendto(msg, self.dest)
+                stacked = np.vstack((index, self.joints_coordinates, self.points, self.trajectory[-1, :]))
+                serialized = stacked.reshape(1, -1)
+                squeezed = np.squeeze(serialized)
+                msg_bytes = json.dumps(squeezed.tolist()).encode()
+                self.udp.sendto(msg_bytes, self.dest)
                 time.sleep(0.0015)
 
         obs2 = self.get_observations()
@@ -204,16 +236,24 @@ class Environment:
         done = self.is_done()
         return obs2, reward, done
     
-    def render(self, stop_render=False):
+    def render(self, stop_render=False, multienv=False):
         if not stop_render:
-            self.processThread = StoppableThread(target=plot_vispy)
-            self.processThread.start()
+            if not multienv:
+                self.processThread = StoppableThread(target=plot_vispy)
+                self.processThread.start()
             self.rendering = True
             self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             self.dest = (HOST, PORT)
+            if not multienv:
+                nums = [1, self.obj_number, 3]
+                msg = json.dumps(nums).encode()
+                time.sleep(1)
+                self.udp.sendto(msg, self.dest)
         else:
-            msg = np.array([-1]).tobytes()
+            self.rendering = False
+            msg = np.array([np.nan, np.nan, 2]).tobytes()
             self.udp.sendto(msg, self.dest)
-            time.sleep(0.5)
+            time.sleep(0.25)
             self.udp.close()
-            self.processThread.stop()
+            if not multienv:
+                self.processThread.stop()

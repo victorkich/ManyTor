@@ -3,6 +3,8 @@ from vispy import app, scene
 import numpy as np
 import threading
 import socket
+import json
+import time
 import sys
 
 HOST = 'localhost'  # Server ip address
@@ -13,35 +15,44 @@ def receive_data(sock):
 	global joints_coordinates
 	global points
 	global trajectory
+	global env_number
+	stop = False
+	obj_number = 0
 
-	while True:
+	while not stop:
 		msg_byte, _ = udp.recvfrom(2048)
-		msg = np.frombuffer(msg_byte, dtype=np.float64)
-		msg = np.array(msg.tolist())
+		msg_list = json.loads(msg_byte)
+		msg = np.array(msg_list)
 
-		#from io import BytesIO
-		#np_bytes = BytesIO()
-		#np.save(np_bytes, msg_byte, allow_pickle=True)
-		#np_bytes = np_bytes.getvalue()
-		
-		if msg[0] == -1:
+		print(msg)
+		if msg[2] == 2:
+			stop = True
 			app.quit()
 			sock.close()
-			break
-		
-		msg = msg.reshape(-1, 3)
-		index = msg[0, :]
-		joints_coordinates = msg[1:5, :]
-		points = np.array(msg[5:5+int(index[1]), :])
-		if int(index[2]):
-			trajectory = np.array([0.0, 0.0, 51.3])
-		trajectory = np.vstack((trajectory, msg[5+int(index[1]):, :]))
+		elif msg[2] == 3:
+			env_number = int(msg[0])
+			obj_number = int(msg[1])
+			joints_coordinates = [np.empty((4, 3)) for i in range(msg[0])]
+			points = np.empty((msg[0], msg[1], 3))
+			trajectory = [np.empty((1, 3)) for i in range(msg[0])]
+		else:
+			ide = int(msg[0])
+			msg = msg.reshape(-1, 3)
+			index = msg[0, :]
+			joints_coordinates[ide] = msg[1:5, :]
+			points[ide] = msg[5:5+obj_number, :]
+			if index[2] == 1:
+				trajectory[ide] = np.array([0.0, 0.0, 51.3])
+			trajectory[ide] = np.vstack((trajectory[ide], msg[5+obj_number:, :]))
 		
 
-def update(_):
-	# traject.set_data(trajectory, edge_color='w', face_color='blue', size=1)
-	point.set_data(points, edge_color='w', face_color='green', size=3)
-	joint.set_data(data=joints_coordinates, color='gray', marker_size='5', width='20.0', face_color='red', edge_color='white')
+def update(ev):
+	for i in range(env_number):
+		#traject.set_data(trajectory, edge_color='w', face_color='blue', size=1)
+		point.set_data(points[i], edge_color='w', face_color='green', size=3)
+		#print('pooints: ', trajectory)
+		joint.set_data(joints_coordinates[i], color='gray', marker_size='5', width='20.0', face_color='red', edge_color='white')
+
 
 	'''
 	x, y, z = [np.array(i) for i in [self.df.x, self.df.y, self.df.z]]
@@ -81,9 +92,10 @@ udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 orig = (HOST, PORT)
 udp.bind(orig)
 
-joints_coordinates = np.array([])
-points = np.array([])
-trajectory = np.array([0.0, 0.0, 51.3])
+env_number = 1
+joints_coordinates = np.empty((1, 4, 3))
+points = np.empty((1, 1, 3))
+trajectory = np.array((1, 1, 3))
 
 dfs = threading.Thread(name='data_from_socket', target=receive_data, args=(udp,))
 dfs.setDaemon(True)
@@ -116,6 +128,7 @@ timer.start()
 if __name__ == '__main__':
 	canvas.show()
 	canvas.app.reuse()
+	time.sleep(0.2)
 	if sys.flags.interactive == 0:
 		app.run()
 	print('FIM')
