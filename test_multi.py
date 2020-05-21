@@ -24,7 +24,7 @@ for i in range(epochs):
 		print('Done: ', done)
 		print('Step: ', p)
 		print('Epoch:', epoch)
-		if done:
+		if done == True:
 			break
 
 	epoch += 1

@@ -8,7 +8,7 @@ import time
 import sys
 
 HOST = 'localhost'  # Server ip address
-PORT = 5003  		# Server port
+PORT = 5000  		  # Server port
 
 
 def receive_data(sock):
@@ -20,7 +20,7 @@ def receive_data(sock):
 	obj_number = 0
 
 	while not stop:
-		msg_byte, _ = udp.recvfrom(2048)
+		msg_byte, user = udp.recvfrom(2048)
 		msg_list = json.loads(msg_byte)
 		msg = np.array(msg_list)
 
@@ -84,8 +84,8 @@ def update(ev):
 		self.ax.set_ylim([-60, 60])
 		self.ax.set_zlim([0, 60])
 		'''
-	
-	
+
+
 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 orig = (HOST, PORT)
 udp.bind(orig)

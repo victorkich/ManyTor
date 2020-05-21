@@ -7,7 +7,7 @@ import math
 import json
 
 HOST = 'localhost'     # Server ip address
-PORT = 5003            # Server port
+PORT = 5000            # Server port
 
 
 def plot_vispy():
@@ -90,6 +90,7 @@ class Multienv:
         if not stop_render:
             nums = [self.env_number, self.obj_number, 3]
             msg = json.dumps(nums).encode()
+            time.sleep(1)
             self.udp.sendto(msg, self.dest)
         else:
             msg = np.array([np.nan, np.nan, 2]).tobytes()
@@ -108,8 +109,14 @@ class Multienv:
         return action_sample
 
     def step(self, action):
-        obs2, reward, done = [self.environment[i].step(action[i]) for i in range(self.env_number)]
-        return obs2, reward, done
+        obs2_list, reward_list, done_list = [], [], []
+        for i in range(self.env_number):
+            obs2, reward, done = self.environment[i].step(action[i])
+            obs2_list.append(obs2)
+            reward_list.append(reward)
+            done_list.append(done)
+        return obs2_list, reward_list, done_list
+
 
 class Environment:
     """Start environment sending [obj_number:int]. If you want to create a custom model for your own
@@ -186,7 +193,7 @@ class Environment:
                 squeezed = np.squeeze(serialized)
                 msg_bytes = json.dumps(squeezed.tolist()).encode()
                 self.udp.sendto(msg_bytes, self.dest)
-                time.sleep(0.0015)
+                time.sleep(0.001)
 
         obs2 = self.get_observations()
         ob = obs[::3]
