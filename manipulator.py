@@ -88,7 +88,8 @@ class Multienv:
         self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.dest = (HOST, PORT)
         if not stop_render:
-            msg = np.array([self.env_number, self.obj_number, 3]).tobytes()
+            nums = [self.env_number, self.obj_number, 3]
+            msg = json.dumps(nums).encode()
             self.udp.sendto(msg, self.dest)
         else:
             msg = np.array([np.nan, np.nan, 2]).tobytes()
@@ -251,7 +252,8 @@ class Environment:
                 self.udp.sendto(msg, self.dest)
         else:
             self.rendering = False
-            msg = np.array([np.nan, np.nan, 2]).tobytes()
+            nums = [np.nan, np.nan, 2]
+            msg = json.dumps(nums).encode()
             self.udp.sendto(msg, self.dest)
             time.sleep(0.25)
             self.udp.close()
