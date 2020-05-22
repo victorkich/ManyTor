@@ -1,4 +1,5 @@
 import manipulator as tor
+from tqdm import tqdm
 import time
 
 epochs = 3
@@ -14,15 +15,9 @@ epoch = 0
 tempo = time.time()
 for i in range(epochs):
 	time_epoch = time.time()
-	for p in range(max_steps):
+	for p in tqdm(range(max_steps)):
 		action = env.action_sample()
-		print('Action: ', action)
 		obs2, reward, done = env.step(action)
-		print('Observation 2: ', obs2)
-		print('Rewards: ', reward)
-		print('Done: ', done)
-		print('Step: ', p)
-		print('Epoch:', epoch)
 		if done:
 			break
 

@@ -174,7 +174,7 @@ class Environment:
         
         # Generating route to manipulator plot
         route = np.linspace(self.goals, action, num=100)
-        for p in range(100):
+        for p in range(50):
             self.goals = route[p, :]
 
             # Modes -> 1 = first joint / 2 = second joint
