@@ -7,7 +7,7 @@ epochs = 3
 max_steps = 100
 obj_number = 5
 
-multienv = tor.Multienv(env_number, obj_number)
+multienv = tor.Multienv(env_shape=(2, 2), obj_number=obj_number)
 obs = multienv.reset(returnable=True)
 multienv.render()
 

@@ -71,13 +71,14 @@ class StoppableThread(threading.Thread):
 
 class Multienv:
     """Function for start and render multiples Environments with our respective individual Agents. Therefore, start
-        this sending: [agent_number:tuple, obj_number:int]
+        this sending: [env_shape:tuple, obj_number:int]
     """
 
-    def __init__(self, env_number, obj_number):
-        self.env_number = env_number
+    def __init__(self, env_shape=(1, 2), obj_number=5):
+        self.env_shape = env_shape
+        self.env_number = env_shape[0]*env_shape[1]
         self.obj_number = obj_number
-        self.environment = [Environment(obj_number=obj_number, index=i, env_number=env_number) for i in range(env_number)]
+        self.environment = [Environment(obj_number=obj_number, index=i) for i in range(self.env_number)]
 
     def render(self, stop_render=False):
         if not stop_render:
@@ -88,7 +89,7 @@ class Multienv:
         self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.dest = (HOST, PORT)
         if not stop_render:
-            nums = [self.env_number, self.obj_number, 3]
+            nums = [self.env_shape, self.obj_number, 3]
             msg = json.dumps(nums).encode()
             time.sleep(1)
             self.udp.sendto(msg, self.dest)
@@ -123,9 +124,8 @@ class Environment:
         manipulator change the get_action(self) and get_observation(self) functions.
     """
 
-    def __init__(self, obj_number=10, index=0, env_number=1):
+    def __init__(self, obj_number=10, index=0):
         self.id = index
-        self.env_number = env_number
         self.obj_number = obj_number
         self.goals = np.zeros(4)
         self.alives = np.array([True for i in range(self.obj_number)])

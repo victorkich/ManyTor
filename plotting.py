@@ -25,7 +25,7 @@ def receive_data(sock, canvas):
 	obj_number = 0
 
 	while not stop:
-		msg_byte, user = udp.recvfrom(2048)
+		msg_byte, user = udp.recvfrom(1024)
 		msg_list = json.loads(msg_byte)
 		msg = np.array(msg_list)
 
@@ -34,23 +34,36 @@ def receive_data(sock, canvas):
 			app.quit()
 			sock.close()
 		elif msg[2] == 3:
-			env_number = int(msg[0])
+			env_shape = msg[0]
+			env_number = int(env_shape[0]*env_shape[1])
 			obj_number = int(msg[1])
-			joints_coordinates = [np.empty((4, 3)) for i in range(msg[0])]
-			points = np.empty((msg[0], msg[1], 3))
-			trajectory = [np.empty((1, 3)) for i in range(msg[0])]
+			joints_coordinates = np.empty((env_number, 4, 3))
+			points = np.empty((env_number, msg[1], 3))
+			trajectory = [np.empty((1, 3)) for _ in range(env_number)]
 
 			view = canvas.central_widget.add_view()
 			camera = scene.cameras.TurntableCamera(fov=100)
 			camera.set_range((90, -90, -90), (-90, 90, -90), (90, -90, -90))
 			view.camera = camera
 
-			point = [visuals.Markers() for i in range(env_number)]
-			joint = [visuals.LinePlot() for i in range(env_number)]
-			traject = [visuals.Markers() for i in range(env_number)]
-			threads = [threading.Thread(name='update_plot '+str(i), target=update, args=(i, )) for i in range(env_number)]
+			threads = []
+			line, column = 0, 0
 
 			for i in range(env_number):
+				point.append(visuals.Markers())
+				joint.append(visuals.LinePlot())
+				traject.append(visuals.Markers())
+
+				x = column*80
+				y = line*80
+				threads.append(threading.Thread(name='Plot ' + str(i), target=update, args=(i, x, y)))
+
+				if column < (env_shape[1]-1):
+					column += 1
+				else:
+					line += 1
+					column = 0
+
 				view.add(point[i])
 				view.add(joint[i])
 				view.add(traject[i])
@@ -70,12 +83,18 @@ def receive_data(sock, canvas):
 		time.sleep(0.001)
 		
 
-def update(i):
+def update(i, x, y):
 	while True:
 		poi = points[i].copy()
-		poi[:, 0] = points[i][:, 0] + 70 * i
+		poi[:, 0] = points[i][:, 0] + x
+		poi[:, 1] = points[i][:, 1] + y
 		j_c = joints_coordinates[i].copy()
-		j_c[:, 0] = joints_coordinates[i][:, 0] + 70 * i
+		j_c[:, 0] = joints_coordinates[i][:, 0] + x
+		j_c[:, 1] = joints_coordinates[i][:, 1] + y
+		traj = trajectory.copy()
+		traj[:, 0] = trajectory[i][:, 0] + x
+		traj[:, 1] = trajectory[i][:, 1] + y
+		traject[i].set_data(traj, edge_color='w', face_color='white', size=1)
 		point[i].set_data(poi, edge_color='w', face_color='green', size=3)
 		joint[i].set_data(j_c, color='gray', marker_size=5, face_color='red', edge_color='red')
 		time.sleep(0.005)
@@ -86,6 +105,7 @@ orig = (HOST, PORT)
 udp.bind(orig)
 
 canvas = SceneCanvas(show=True, size=(800, 600), resizable=False, keys="interactive")
+point, joint, traject = [], [], []
 
 dfs = threading.Thread(name='data_from_socket', target=receive_data, args=(udp, canvas, ))
 dfs.setDaemon(True)
