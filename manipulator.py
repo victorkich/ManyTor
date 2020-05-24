@@ -89,14 +89,14 @@ class Multienv:
         self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.dest = (HOST, PORT)
         if not stop_render:
-            nums = [self.env_shape, self.obj_number, 3]
+            nums = [self.env_number, self.obj_number, 3, self.env_shape]
             msg = json.dumps(nums).encode()
-            time.sleep(0.4)
+            time.sleep(0.75)
             self.udp.sendto(msg, self.dest)
         else:
             msg = np.array([np.nan, np.nan, 2]).tobytes()
             self.udp.sendto(msg, self.dest)
-            time.sleep(0.25)
+            time.sleep(0.5)
             self.udp.close()
             self.processThread.stop()
 
@@ -193,7 +193,7 @@ class Environment:
                 squeezed = np.squeeze(serialized)
                 msg_bytes = json.dumps(squeezed.tolist()).encode()
                 self.udp.sendto(msg_bytes, self.dest)
-                time.sleep(0.005)
+                time.sleep(0.006)
 
         obs2 = self.get_observations()
         ob = obs[::3]
@@ -232,9 +232,14 @@ class Environment:
                     cont = cont + 1
 
         self.points = points[1:, :]
-        obs = self.get_observations()
+
+        if self.rendering:
+            nums = [np.nan, np.nan, 4]
+            msg = json.dumps(nums).encode()
+            self.udp.sendto(msg, self.dest)
 
         if returnable:
+            obs = self.get_observations()
             return obs
     
     def step(self, action):
@@ -255,14 +260,14 @@ class Environment:
             if not multienv:
                 nums = [1, self.obj_number, 3]
                 msg = json.dumps(nums).encode()
-                time.sleep(0.4)
+                time.sleep(0.75)
                 self.udp.sendto(msg, self.dest)
         else:
             self.rendering = False
             nums = [np.nan, np.nan, 2]
             msg = json.dumps(nums).encode()
             self.udp.sendto(msg, self.dest)
-            time.sleep(0.25)
+            time.sleep(0.5)
             self.udp.close()
             if not multienv:
                 self.processThread.stop()

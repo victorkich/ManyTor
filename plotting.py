@@ -7,8 +7,6 @@ import json
 import time
 import sys
 
-import multiprocessing
-
 HOST = 'localhost'  # Server ip address
 PORT = 5000  		  # Server port
 
@@ -36,8 +34,12 @@ def receive_data(sock, canvas):
 			app.quit()
 			sock.close()
 		elif msg[2] == 3:
-			env_shape = msg[0]
-			env_number = int(env_shape[0]*env_shape[1])
+			env_number = int(msg[0])
+			if env_number == 1:
+				env_shape = (1, 1)
+			else:
+				env_shape = msg[3]
+
 			obj_number = int(msg[1])
 			joints_coordinates = np.empty((env_number, 4, 3))
 			points = np.empty((env_number, msg[1], 3))
@@ -56,8 +58,8 @@ def receive_data(sock, canvas):
 				joint.append(visuals.LinePlot())
 				traject.append(visuals.Markers())
 
-				x = column*80
-				y = line*80
+				x = column*105
+				y = line*105
 				threads.append(threading.Thread(target=update, args=(i, x, y)))
 
 				if column < (env_shape[1]-1):
@@ -71,7 +73,8 @@ def receive_data(sock, canvas):
 				view.add(traject[i])
 				threads[i].setDaemon(True)
 				threads[i].start()
-
+		elif msg[2] == 4:
+			trajectory = [np.empty((1, 3)) for _ in range(env_number)]
 		else:
 			ide = int(msg[0])
 			msg = msg.reshape(-1, 3)
@@ -81,7 +84,6 @@ def receive_data(sock, canvas):
 			if index[2] == 1:
 				trajectory[ide] = np.array([0.0, 0.0, 51.3])
 			trajectory[ide] = np.vstack((trajectory[ide], msg[-1, :]))
-
 		time.sleep(0.005)
 		
 
@@ -99,7 +101,7 @@ def update(i, x, y):
 		traject[i].set_data(traj, edge_color='blue', face_color='blue', size=1)
 		point[i].set_data(poi, edge_color='green', face_color='green', size=5)
 		joint[i].set_data(j_c, color='orange', marker_size=5, face_color='red', edge_color='red')
-		time.sleep(0.02)
+		time.sleep(0.03)
 
 
 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -113,7 +115,7 @@ dfs = threading.Thread(target=receive_data, args=(udp, canvas))
 dfs.setDaemon(True)
 dfs.start()
 
-time.sleep(0.02)
+time.sleep(0.2)
 canvas.show()
 canvas.app.reuse()
 # canvas.measure_fps()
