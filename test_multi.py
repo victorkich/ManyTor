@@ -5,15 +5,16 @@ import time
 # Multienv has a matrix representation, (2, 2) is 2x2 = 4 simultaneous environments
 env_shape = (2, 2)
 epochs = 50
-max_steps = 100
-obj_number = 8
+max_steps = 50
+obj_number = 7
 
 multienv = tor.Multienv(env_shape=env_shape, obj_number=obj_number)
 obs = multienv.reset(returnable=True)
 
-tempo_epocas = []
+env_number = env_shape[0]*env_shape[1]
+epochs_time = []
 epoch = 0
-tempo = time.time()
+timer = time.time()
 for i in range(1, epochs):
 	time_epoch = time.time()
 	for p in tqdm(range(max_steps)):
@@ -28,12 +29,12 @@ for i in range(1, epochs):
 		multienv.render(stop_render=True)
 
 	epoch += 1
-	tempo_epocas.append([i, time.time()-time_epoch])
-	print('Total Reward: ', [multienv.environment[i].total_reward for i in range(env_shape[0]*env_shape[1])])
-	print('Total Epochs: ', epoch)
+	epochs_time.append([i, time.time()-time_epoch])
+	print('Total Reward: ', [multienv.environment[i].total_reward for i in range(env_number)])
+	print('Epoch: ', epoch)
 	multienv.reset()
 
-tempo_total = time.time()-tempo
-print('Total Time: ', tempo_total)
-print('Time per Epoch: ', tempo_epocas)
+total_time = time.time()-timer
+print('Total Time: ', total_time)
+print('Time per Epoch: ', epochs_time)
 multienv.render(stop_render=True)

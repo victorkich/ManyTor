@@ -3,16 +3,16 @@ from tqdm import tqdm
 import time
 
 epochs = 300
-max_steps = 100
-obj_number = 5
+max_steps = 200
+obj_number = 10
 
 env = tor.Environment(obj_number)
 obs = env.reset(returnable=True)
 
-tempo_epocas = []
+epochs_time = []
 rendering = False
 epoch = 0
-tempo = time.time()
+timer = time.time()
 for i in range(1, epochs):
 	time_epoch = time.time()
 	for p in tqdm(range(max_steps)):
@@ -27,12 +27,12 @@ for i in range(1, epochs):
 		env.render(stop_render=True)
 
 	epoch += 1
-	tempo_epocas.append([i, time.time()-time_epoch])
+	epochs_time.append([i, time.time()-time_epoch])
 	print('Total Reward: ', env.total_reward)
-	print('Total Epochs: ', epoch)
+	print('Epoch: ', epoch)
 	env.reset()
 
-tempo_total = time.time()-tempo
-print('Total Time: ', tempo_total)
-print('Time per Epoch: ', tempo_epocas)
+total_time = time.time()-timer
+print('Total Time: ', total_time)
+print('Time per Epoch: ', epochs_time)
 env.render(stop_render=True)
