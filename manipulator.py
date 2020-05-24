@@ -78,6 +78,7 @@ class Multienv:
         self.env_shape = env_shape
         self.env_number = env_shape[0]*env_shape[1]
         self.obj_number = obj_number
+        self.rendering = False
         self.environment = [Environment(obj_number=obj_number, index=i) for i in range(self.env_number)]
 
     def render(self, stop_render=False):
@@ -89,11 +90,13 @@ class Multienv:
         self.udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.dest = (HOST, PORT)
         if not stop_render:
+            self.rendering = True
             nums = [self.env_number, self.obj_number, 3, self.env_shape]
             msg = json.dumps(nums).encode()
             time.sleep(0.75)
             self.udp.sendto(msg, self.dest)
         else:
+            self.rendering = False
             msg = np.array([np.nan, np.nan, 2]).tobytes()
             self.udp.sendto(msg, self.dest)
             time.sleep(0.5)

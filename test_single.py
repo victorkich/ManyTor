@@ -23,10 +23,8 @@ for i in range(1, epochs):
 
 	if not i % 10:
 		env.render()
-		rendering = True
-	elif rendering:
+	elif env.rendering:
 		env.render(stop_render=True)
-		rendering = False
 
 	epoch += 1
 	tempo_epocas.append([i, time.time()-time_epoch])

@@ -3,16 +3,15 @@ from tqdm import tqdm
 import time
 
 # Multienv has a matrix representation, (2, 2) is 2x2 = 4 simultaneous environments
-env_shape = (1, 1)
+env_shape = (2, 2)
 epochs = 50
-max_steps = 200
+max_steps = 100
 obj_number = 8
 
 multienv = tor.Multienv(env_shape=env_shape, obj_number=obj_number)
 obs = multienv.reset(returnable=True)
 
 tempo_epocas = []
-rendering = False
 epoch = 0
 tempo = time.time()
 for i in range(1, epochs):
@@ -25,10 +24,9 @@ for i in range(1, epochs):
 
 	if not i % 10:
 		multienv.render()
-		rendering = True
-	elif rendering:
+	elif multienv.rendering:
 		multienv.render(stop_render=True)
-		rendering = False
+
 	epoch += 1
 	tempo_epocas.append([i, time.time()-time_epoch])
 	print('Total Reward: ', [multienv.environment[i].total_reward for i in range(env_shape[0]*env_shape[1])])
