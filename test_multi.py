@@ -2,10 +2,11 @@ import manipulator as tor
 from tqdm import tqdm
 import time
 
-env_number = 2
-epochs = 3
-max_steps = 100
-obj_number = 5
+# Multienv has a matrix representation, (2, 2) is 2x2 = 4 simultaneous environments
+env_shape = (2, 2)
+epochs = 4
+max_steps = 50
+obj_number = 12
 
 multienv = tor.Multienv(env_shape=(2, 2), obj_number=obj_number)
 obs = multienv.reset(returnable=True)
@@ -24,7 +25,7 @@ for i in range(epochs):
 
 	epoch += 1
 	tempo_epocas.append([i, time.time()-time_epoch])
-	print('Total Reward: ', [multienv.environment[i].total_reward for i in range(env_number)])
+	print('Total Reward: ', [multienv.environment[i].total_reward for i in range(env_shape[0]*env_shape[1])])
 	print('Total Epochs: ', epoch)
 	multienv.reset()
 

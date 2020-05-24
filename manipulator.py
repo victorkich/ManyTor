@@ -91,7 +91,7 @@ class Multienv:
         if not stop_render:
             nums = [self.env_shape, self.obj_number, 3]
             msg = json.dumps(nums).encode()
-            time.sleep(1)
+            time.sleep(0.4)
             self.udp.sendto(msg, self.dest)
         else:
             msg = np.array([np.nan, np.nan, 2]).tobytes()
@@ -171,17 +171,17 @@ class Environment:
     def action(self, action, obs):
         negative_reward = False
         index = [self.id, np.nan, 1]
-        
+        step = 25
         # Generating route to manipulator plot
-        route = np.linspace(self.goals, action, num=100)
-        for p in range(50):
+        route = np.linspace(self.goals, action, num=step)
+        for p in range(step):
             self.goals = route[p, :]
 
             # Modes -> 1 = first joint / 2 = second joint
             #          3 = third joint / 4 = fourth joint
             joints_coordinates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2, 5)])
             self.joints_coordinates = np.vstack((np.zeros(3), joints_coordinates))
-            self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[2, :]))
+            self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[3, :]))
             if self.joints_coordinates[3, 2] < 0:
                 negative_reward = True
 
@@ -193,7 +193,7 @@ class Environment:
                 squeezed = np.squeeze(serialized)
                 msg_bytes = json.dumps(squeezed.tolist()).encode()
                 self.udp.sendto(msg_bytes, self.dest)
-                time.sleep(0.001)
+                time.sleep(0.005)
 
         obs2 = self.get_observations()
         ob = obs[::3]
@@ -255,7 +255,7 @@ class Environment:
             if not multienv:
                 nums = [1, self.obj_number, 3]
                 msg = json.dumps(nums).encode()
-                time.sleep(1)
+                time.sleep(0.4)
                 self.udp.sendto(msg, self.dest)
         else:
             self.rendering = False

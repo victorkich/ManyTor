@@ -7,6 +7,8 @@ import json
 import time
 import sys
 
+import multiprocessing
+
 HOST = 'localhost'  # Server ip address
 PORT = 5000  		  # Server port
 
@@ -56,7 +58,7 @@ def receive_data(sock, canvas):
 
 				x = column*80
 				y = line*80
-				threads.append(threading.Thread(name='Plot ' + str(i), target=update, args=(i, x, y)))
+				threads.append(threading.Thread(target=update, args=(i, x, y)))
 
 				if column < (env_shape[1]-1):
 					column += 1
@@ -78,9 +80,9 @@ def receive_data(sock, canvas):
 			points[ide] = msg[5:5+obj_number, :]
 			if index[2] == 1:
 				trajectory[ide] = np.array([0.0, 0.0, 51.3])
-			trajectory[ide] = np.vstack((trajectory[ide], msg[5+obj_number:, :]))
+			trajectory[ide] = np.vstack((trajectory[ide], msg[-1, :]))
 
-		time.sleep(0.001)
+		time.sleep(0.005)
 		
 
 def update(i, x, y):
@@ -91,28 +93,29 @@ def update(i, x, y):
 		j_c = joints_coordinates[i].copy()
 		j_c[:, 0] = joints_coordinates[i][:, 0] + x
 		j_c[:, 1] = joints_coordinates[i][:, 1] + y
-		traj = trajectory.copy()
-		traj[:, 0] = trajectory[i][:, 0] + x
-		traj[:, 1] = trajectory[i][:, 1] + y
-		traject[i].set_data(traj, edge_color='w', face_color='white', size=1)
-		point[i].set_data(poi, edge_color='w', face_color='green', size=3)
-		joint[i].set_data(j_c, color='gray', marker_size=5, face_color='red', edge_color='red')
-		time.sleep(0.005)
+		traj = trajectory[i].copy()
+		traj[:, 0] = traj[:, 0] + x
+		traj[:, 1] = traj[:, 1] + y
+		traject[i].set_data(traj, edge_color='blue', face_color='blue', size=1)
+		point[i].set_data(poi, edge_color='green', face_color='green', size=5)
+		joint[i].set_data(j_c, color='orange', marker_size=5, face_color='red', edge_color='red')
+		time.sleep(0.02)
 
 
 udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 orig = (HOST, PORT)
 udp.bind(orig)
 
-canvas = SceneCanvas(show=True, size=(800, 600), resizable=False, keys="interactive")
+canvas = SceneCanvas(show=True, size=(800, 600), resizable=False, keys="interactive", vsync=False)
 point, joint, traject = [], [], []
 
-dfs = threading.Thread(name='data_from_socket', target=receive_data, args=(udp, canvas, ))
+dfs = threading.Thread(target=receive_data, args=(udp, canvas))
 dfs.setDaemon(True)
 dfs.start()
 
 time.sleep(0.02)
 canvas.show()
 canvas.app.reuse()
+# canvas.measure_fps()
 if sys.flags.interactive == 0:
 	app.run()
