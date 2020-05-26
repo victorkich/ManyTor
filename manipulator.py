@@ -131,7 +131,7 @@ class Environment:
         self.id = index
         self.obj_number = obj_number
         self.goals = np.zeros(4)
-        self.alives = np.array([True for i in range(self.obj_number)])
+        self.alives = np.array([True for _ in range(self.obj_number)])
         self.trajectory = np.array([0.0, 0.0, 51.3])
         self.joints_coordinates = np.array([])
         self.points = np.array([])
@@ -158,7 +158,7 @@ class Environment:
             validation_test = []
             for a in range(3):
                 # Check if terminal (x, y and z) is close to each objective (x, y and z)
-                if math.isclose(self.joints_coordinates[2, a], self.points[p, a], abs_tol=0.75):
+                if math.isclose(self.joints_coordinates[3, a], self.points[p, a], abs_tol=5.75):
                     validation_test.append(True)
                 else:
                     validation_test.append(False)
@@ -175,6 +175,8 @@ class Environment:
         negative_reward = False
         index = [self.id, np.nan, 1]
         step = 25
+
+        initial = self.alives
         # Generating route to manipulator plot
         route = np.linspace(self.goals, action, num=step)
         for p in range(step):
@@ -185,7 +187,7 @@ class Environment:
             joints_coordinates = np.array([fk(mode=i, goals=self.goals)[0:3, 3] for i in range(2, 5)])
             self.joints_coordinates = np.vstack((np.zeros(3), joints_coordinates))
             self.trajectory = np.vstack((self.trajectory, self.joints_coordinates[3, :]))
-            if self.joints_coordinates[3, 2] < 0:
+            if (self.joints_coordinates[2, 2] < 0) or (self.joints_coordinates[3, 2] < 0):
                 negative_reward = True
 
             # Send to vispy
@@ -204,6 +206,13 @@ class Environment:
         min_dist = min([ob[i] for i in range(ob.size) if (ob > 0)[i]])
         min_dist2 = min([ob2[i] for i in range(ob2.size) if (ob2 > 0)[i]])
         reward = np.tanh(min_dist - min_dist2)
+
+        #reward = 0
+        #_ = self.is_done()
+
+        #if sum(initial) > sum(self.alives):
+        #    reward = 1
+
         if negative_reward:
             reward = -1
         return reward, obs2
