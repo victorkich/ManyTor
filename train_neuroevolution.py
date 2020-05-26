@@ -10,16 +10,16 @@ from tqdm import tqdm
 
 
 NOISE_STD = 0.01
-POPULATION_SIZE = 300
+POPULATION_SIZE = 250
 PARENTS_COUNT = 10
 WORKERS_COUNT = 10
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 OBJ_SIZE = 10
-EPOCHS = 100000
-MAX_STEPS = 10
-TEST_STEPS = 10
+EPOCHS = 1000
+MAX_STEPS = 30
+TEST_STEPS = 30
 
 
 class Net(nn.Module):
@@ -65,7 +65,7 @@ def mutate_net(net, seed, copy_net=True):
 
 def build_net(seeds):
     torch.manual_seed(seeds[0])
-    net = Net(OBJ_SIZE*3, 4)
+    net = Net(obs_size=OBJ_SIZE*3, act_size=4)
     for seed in seeds[1:]:
         net = mutate_net(net, seed, copy_net=False)
     return net
@@ -73,6 +73,7 @@ def build_net(seeds):
 
 OutputItem = collections.namedtuple('OutputItem', field_names=['seeds', 'reward', 'steps'])
 cache = {}
+
 
 def worker_func(input_queue, output_queue):
     env = tor.Environment(OBJ_SIZE)
@@ -135,6 +136,10 @@ if __name__ == "__main__":
             gen_idx, reward_mean, reward_max, reward_std, speed))
 
         elite = population[0]
+        net = build_net(population[0][0])
+        torch.save(net.state_dict(), 'net.pt')
+        print('Elite salvo!')
+
         for worker_queue in input_queues:
             seeds = []
             for _ in range(SEEDS_PER_WORKER):
@@ -144,18 +149,7 @@ if __name__ == "__main__":
             worker_queue.put(seeds)
         gen_idx += 1
 
-    env = tor.Environment(OBJ_SIZE)
-    obs = env.reset(returnable=True)
-    env.render()
-
-    for p in tqdm(range(TEST_STEPS)):
-        obs_v = torch.FloatTensor([obs])
-        net = cache[elite]
-        action_v = net(obs_v)
-        obs, reward, done = env.step(action_v.data.numpy()[0] * 180)
-        if done:
-            break
-
-    print('Total Reward: ', env.total_reward)
-    env.reset()
-    env.render(stop_render=True)
+    print('Seed: ', population[0][0])
+    net = build_net(population[0][0])
+    torch.save(net.state_dict(), 'net.pt')
+    print('SAVED!')

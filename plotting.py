@@ -8,7 +8,7 @@ import time
 import sys
 
 HOST = 'localhost'  # Server ip address
-PORT = 5000  		  # Server port
+PORT = 5001  		  # Server port
 
 
 def receive_data(sock, canvas):

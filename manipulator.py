@@ -7,7 +7,7 @@ import math
 import json
 
 HOST = 'localhost'     # Server ip address
-PORT = 5000            # Server port
+PORT = 5001            # Server port
 
 
 def plot_vispy():
@@ -158,7 +158,7 @@ class Environment:
             validation_test = []
             for a in range(3):
                 # Check if terminal (x, y and z) is close to each objective (x, y and z)
-                if math.isclose(self.joints_coordinates[3, a], self.points[p, a], abs_tol=5.75):
+                if math.isclose(self.joints_coordinates[3, a], self.points[p, a], abs_tol=10.0):
                     validation_test.append(True)
                 else:
                     validation_test.append(False)
@@ -176,7 +176,7 @@ class Environment:
         index = [self.id, np.nan, 1]
         step = 25
 
-        initial = self.alives
+        initial = self.alives.copy()
         # Generating route to manipulator plot
         route = np.linspace(self.goals, action, num=step)
         for p in range(step):
@@ -201,20 +201,20 @@ class Environment:
                 time.sleep(0.006)
 
         obs2 = self.get_observations()
-        ob = obs[::3]
-        ob2 = obs2[::3]
-        min_dist = min([ob[i] for i in range(ob.size) if (ob > 0)[i]])
-        min_dist2 = min([ob2[i] for i in range(ob2.size) if (ob2 > 0)[i]])
-        reward = np.tanh(min_dist - min_dist2)
+        #ob = obs[::3]
+        #ob2 = obs2[::3]
+        #min_dist = min([ob[i] for i in range(ob.size) if (ob > 0)[i]])
+        #min_dist2 = min([ob2[i] for i in range(ob2.size) if (ob2 > 0)[i]])
+        #reward = np.tanh(min_dist - min_dist2)
 
-        #reward = 0
-        #_ = self.is_done()
+        reward = 0
+        _ = self.is_done()
 
-        #if sum(initial) > sum(self.alives):
-        #    reward = 1
+        if sum(initial) > sum(self.alives):
+            reward = 1
 
-        if negative_reward:
-            reward = -1
+        #if negative_reward:
+        #    reward = -1
         return reward, obs2
 
     def action_sample(self):
