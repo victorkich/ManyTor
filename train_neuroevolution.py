@@ -7,36 +7,37 @@ import torch.nn as nn
 import torch.multiprocessing as mp
 import manipulator as tor
 from tqdm import tqdm
+import pandas as pd
+from torch.autograd import Variable
 
-
-NOISE_STD = 0.01
-POPULATION_SIZE = 250
+NOISE_STD = 0.05
+POPULATION_SIZE = 300
 PARENTS_COUNT = 10
 WORKERS_COUNT = 10
 SEEDS_PER_WORKER = POPULATION_SIZE // WORKERS_COUNT
 MAX_SEED = 2**32 - 1
 
 OBJ_SIZE = 10
-EPOCHS = 1000
-MAX_STEPS = 30
-TEST_STEPS = 30
+EPOCHS = 1200
+MAX_STEPS = 20
 
 
 class Net(nn.Module):
     def __init__(self, obs_size, act_size, hid_size=64):
         super(Net, self).__init__()
-
         self.mu = nn.Sequential(
+            # nn.LSTM(input_size=(int(obs_size), 1, 1), hidden_size=hid_size, num_layers=1, bidirectional=False),
             nn.Linear(obs_size, hid_size),
             nn.Tanh(),
-            nn.Linear(hid_size, hid_size),
-            nn.Tanh(),
             nn.Linear(hid_size, act_size),
-            nn.Tanh(),
+            nn.Tanh()
         )
 
     def forward(self, x):
         return self.mu(x)
+
+
+df = pd.DataFrame({'reward_mean': [],'reward_max': [], 'reward_std': []})
 
 
 def evaluate(env, net):
@@ -132,6 +133,11 @@ if __name__ == "__main__":
         reward_max = np.max(rewards)
         reward_std = np.std(rewards)
         speed = batch_steps / (time.time() - t_start)
+
+        new_df = pd.DataFrame({'reward_mean': [reward_mean],'reward_max': [reward_max], 'reward_std': [reward_std]})
+        df = df.append(new_df, ignore_index=True).copy()
+        df.to_csv('data.csv', index=False)
+
         print("%d: reward_mean=%.2f, reward_max=%.2f, reward_std=%.2f, speed=%.2f f/s" % (
             gen_idx, reward_mean, reward_max, reward_std, speed))
 

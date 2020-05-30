@@ -145,6 +145,7 @@ class Environment:
             # Computing all distances between the terminal and the objective points.
             if not self.alives[p]:
                 obs = np.concatenate((obs, [0.0, 0.0, 0.0]), axis=0)
+                self.points[p, :] = [0.0, 0.0, 0.0]
             else:
                 mod_dist = np.array([(abs(j_c[i] - self.points[p, i])) for i in range(3)])
                 euc_dist = np.array(math.sqrt(math.sqrt(mod_dist[0] ** 2 + mod_dist[1] ** 2) ** 2 + mod_dist[2] ** 2))

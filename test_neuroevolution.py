@@ -7,7 +7,7 @@ import copy
 
 
 class Net(nn.Module):
-	def __init__(self, obs_size, act_size, hid_size=64):
+	def __init__(self, obs_size, act_size, hid_size=16):
 		super(Net, self).__init__()
 
 		self.mu = nn.Sequential(
@@ -24,8 +24,8 @@ class Net(nn.Module):
 
 
 epochs = 300
-max_steps = 200
-obj_number = 10
+max_steps = 10
+obj_number = 1
 
 model = Net(obs_size=obj_number*3, act_size=4)
 model.load_state_dict(torch.load('net.pt'))
@@ -41,6 +41,8 @@ timer = time.time()
 
 for i in range(1, epochs):
 
+	model.load_state_dict(torch.load('net.pt'))
+	model.eval()
 	time_epoch = time.time()
 
 	for p in tqdm(range(max_steps)):
@@ -48,7 +50,6 @@ for i in range(1, epochs):
 		action_v = model.forward(obs_v)
 		action = action_v[0].detach().numpy()*180
 		obs, reward, done = env.step(action)
-		print(reward)
 		if done:
 			break
 		time.sleep(0.1)

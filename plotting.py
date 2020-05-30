@@ -60,7 +60,7 @@ def receive_data(sock, canvas):
 
 				x = column*105
 				y = line*105
-				threads.append(threading.Thread(target=update, args=(i, x, y)))
+				threads.append(threading.Thread(target=update, args=(i, x, y, obj_number)))
 
 				if column < (env_shape[1]-1):
 					column += 1
@@ -87,11 +87,14 @@ def receive_data(sock, canvas):
 		time.sleep(0.005)
 		
 
-def update(i, x, y):
+def update(i, x, y, obj_number):
 	while True:
 		poi = points[i].copy()
 		poi[:, 0] = points[i][:, 0] + x
 		poi[:, 1] = points[i][:, 1] + y
+		for p in range(obj_number-1, -1, -1):
+			if (poi[p] == [x, y, 0]).all():
+				poi = np.delete(poi, p, axis=0).copy()
 		j_c = joints_coordinates[i].copy()
 		j_c[:, 0] = joints_coordinates[i][:, 0] + x
 		j_c[:, 1] = joints_coordinates[i][:, 1] + y
@@ -99,7 +102,7 @@ def update(i, x, y):
 		traj[:, 0] = traj[:, 0] + x
 		traj[:, 1] = traj[:, 1] + y
 		traject[i].set_data(traj, edge_color='blue', face_color='blue', size=1)
-		point[i].set_data(poi, edge_color='green', face_color='green', size=5)
+		point[i].set_data(poi, edge_color='green', face_color='green', size=10)
 		joint[i].set_data(j_c, color='orange', marker_size=5, face_color='red', edge_color='red')
 		time.sleep(0.03)
 

@@ -18,10 +18,8 @@ for i in range(1, epochs):
 	for p in tqdm(range(max_steps)):
 		action = env.action_sample()
 		obs2, reward, done = env.step(action)
-		print(reward)
 		if done:
 			break
-		time.sleep(1)
 	epoch += 1
 	epochs_time.append([i, time.time()-time_epoch])
 	print('Total Reward: ', env.total_reward)
