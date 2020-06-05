@@ -13,7 +13,7 @@
 <p align="justify"> 
   <img src="https://i.imgur.com/IyulesQ.png" alt="ManyTor" align="right" width="320">
   <a>For general purpose, i decided to create a new environmnet instead use one environment already created.
-Is this project i use matplotlib to plot and simulate links, joints and objectives, as well as ground.
+Is this project i use vispy to plot and simulate links, joints and objectives, as well as ground.
 My base environment consist in one manipulator with 4 joints (3+terminal) with the Denavit-Hartember parameters present here on the right. </a>  
 </p>
   
