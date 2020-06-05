@@ -159,7 +159,7 @@ class Environment:
             validation_test = []
             for a in range(3):
                 # Check if terminal (x, y and z) is close to each objective (x, y and z)
-                if math.isclose(self.joints_coordinates[3, a], self.points[p, a], abs_tol=10.0):
+                if math.isclose(self.joints_coordinates[3, a], self.points[p, a], abs_tol=8.0):
                     validation_test.append(True)
                 else:
                     validation_test.append(False)
@@ -202,20 +202,14 @@ class Environment:
                 time.sleep(0.006)
 
         obs2 = self.get_observations()
-        #ob = obs[::3]
-        #ob2 = obs2[::3]
-        #min_dist = min([ob[i] for i in range(ob.size) if (ob > 0)[i]])
-        #min_dist2 = min([ob2[i] for i in range(ob2.size) if (ob2 > 0)[i]])
-        #reward = np.tanh(min_dist - min_dist2)
-
         reward = 0
         _ = self.is_done()
 
         if sum(initial) > sum(self.alives):
             reward = 1
 
-        #if negative_reward:
-        #    reward = -1
+        if negative_reward:
+            reward = -1
         return reward, obs2
 
     def action_sample(self):
@@ -245,6 +239,9 @@ class Environment:
                     cont = cont + 1
 
         self.points = points[1:, :]
+
+        #self.points = np.array([[10, 15, 10], [5, 5, 5], [-10, 12, 30], [25, -10, 14], [-16, -16, 16],
+        #                        [-14, 0, 6], [30, -15, 22], [7, 40, 30], [40, 5, 5], [-30, 6, 10]])
 
         if self.rendering:
             nums = [np.nan, np.nan, 4]

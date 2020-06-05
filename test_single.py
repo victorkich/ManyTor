@@ -8,7 +8,6 @@ obj_number = 10
 
 env = tor.Environment(obj_number)
 obs = env.reset(returnable=True)
-env.render()
 epochs_time = []
 rendering = False
 epoch = 0
@@ -20,6 +19,12 @@ for i in range(1, epochs):
 		obs2, reward, done = env.step(action)
 		if done:
 			break
+
+	if not i % 10:
+		env.render()
+	elif env.rendering:
+		env.render(stop_render=True)
+
 	epoch += 1
 	epochs_time.append([i, time.time()-time_epoch])
 	print('Total Reward: ', env.total_reward)
