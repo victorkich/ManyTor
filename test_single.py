@@ -1,4 +1,4 @@
-import manipulator as tor
+import manytor as tor
 from tqdm import tqdm
 import time
 
