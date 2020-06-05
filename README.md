@@ -1,84 +1,46 @@
-# User Guide
-To train and test this project is pretty simple. With only two lines of code you complete this task. 
-First, you need the clone this repository. For do this use:
 
-`git clone https://github.com/victorkich/ReinforcementLearning-IK`
-
-To install all requirements, open repository folder and execute the following code:
-
-`cd new`
-
-`chmod 777 requirements.sh`
-
-`./requirements.sh`
-
-Now, you need chose what algorithm do you want run, PPO or DDPG. 
-If you want run the DDPG execute the following code:
-
-`python3 ddpg.py --test`
-
-And for the PPO this:
-
-`python3 ppo.py --test`
-
-_Be aware you have tensorflow v2 installed. Even as numpy, pandas, tqdm, keras and matplotlib._
-
-# The Project
-
-In this project i chose to train and test 2 great algorithms to solve the continuous inverse kinematics with multiple objectives.
-These algorithms is Proximal Policy Optimization (PPO) and Deep Deterministic Policy Gradient (DDPG).
-
-<h2>The Environment</h2>
-For general purpose, i decided to create a new environmnet instead use one environment already created.
-Is this project i use matplotlib to plot and simulate links, joints and objectives, as well as ground and projection (terminal shadow!?).
-My environment consist in one manipulator with 4 joints (3+terminal) with the following Denavit-Hartember parameters:
+<h1 align="center">ManyTor</h1>
+<h3 align="center">This is a project inspired by the gym module, we seeks to bring facilities to researchers and developers who work with robotic manipulators and/or reinforcement learning.</h3>
 
 <p align="center"> 
-<img src="https://i.imgur.com/IyulesQ.png"/>
+  <img src="https://img.shields.io/badge/Vispy-v0.6.4-blue"/>
+  <img src="https://img.shields.io/badge/Numpy-v1.18.2-blue"/>
+  <img src="https://img.shields.io/badge/Tqdm-v4.42.1-blue"/>
+</p>
+<br/>
+
+## Environment
+<p align="justify"> 
+  <img src="https://i.imgur.com/IyulesQ.png" alt="ManyTor" align="right" width="320">
+  <a>For general purpose, i decided to create a new environmnet instead use one environment already created.
+Is this project i use matplotlib to plot and simulate links, joints and objectives, as well as ground.
+My base environment consist in one manipulator with 4 joints (3+terminal) with the Denavit-Hartember parameters present here on the right. </a>  
+</p>
+  
+>**Obs**: I am currently working to generalize the code with the purpose of adapting the simulation to any manipulator model only by changing its forward kinematic function.
+
+## Setup
+<p align="justify"> 
+ <a>All of requirements is show in the badgets above, but if you want to install all of them, enter the repository and execute the following line of code:</a>
 </p>
 
-<h3>The Objectives</h3>
-
-The environment objectives consist in 10 random points refreshing when all points is colected.
-Each point have one fixed reward and one variable reward, but that will be explained soon.
-
-<p align="center"> 
-<img src="https://media.giphy.com/media/Wonv0YvrM5Djy6XkXW/giphy.webp"/>
+```shell
+pip3 install -r requirements.txt
+```
+## Objectives
+<p align="justify"> 
+  <a> I am currently working to generalize the code with the purpose of adapting the simulation to any manipulator model only by changing its forward kinematic function.
+</a>
 </p>
 
-<h3>The Train</h3>
 
-To create a new training file is necessary use the following command:
-
-For PPO algorithm use -> `python3 ppo.py --train`
-
-For DDPG algorithm use -> `python3 ddpg.py --train`
-
-The training consist in a navigation among a large size of iterations with random values (angles). This is useful for gaining knowledge of the environment and understanding how work the observations. All of these events happen because the rewards.
-
-<p align="center"> 
-<img src="https://media.giphy.com/media/l0cgKcqi1khQYKt0mC/giphy.webp"/>
+## Reward System
+<p align="justify" float="left"> 
+  <img src="https://media.giphy.com/media/Izd6ZTUl6JvnjqH1a1/giphy.webp" alt="Neon Drive" align="right" width="320">
+  As the agent observes the current state of the environment and chooses an action, the environment transitions to a new state, and also returns a reward that indicates the consequences of  the action. In this task, rewards are +1 for every time the agent catches a ball and the environment terminates if all the balls were picked up or the manipulator hit the ground. This means that the most performing scenarios will end in ![equation](https://latex.codecogs.com/gif.latex?\gamma) timesteps, where ![equation](https://latex.codecogs.com/gif.latex?\gamma) means the number of objectives.
+  
 </p>
 
-<h3>The Rewards</h3>
-... ... ...
-
-<p align="center"> 
-<img src=""/>
-</p>
-
-<h2>The Algorithms</h2>
-
-<h3>PPO</h3>
-... ... ...
-
-<p align="center"> 
-<img src=""/>
-</p>
-
-<h3>DDPG</h3>
-... ... ...
-
-<p align="center"> 
-<img src=""/>
+<p align="justify"> 
+  <a><em>If you liked this repository, please don't forget to starred it!</em></a>  <img src="https://img.shields.io/github/stars/victorkich/Neon-Drive-Reinforcement-Learning?style=social" align="center"/>
 </p>
