@@ -29,7 +29,7 @@ pip3 install -r requirements.txt
 ```
 ## Objectives
 <p align="justify"> 
-  <a> I am currently working to generalize the code with the purpose of adapting the simulation to any manipulator model only by changing its forward kinematic function.
+  <a> The environment objectives consist in 10 random points refreshing when all points is colected. Each point have one fixed reward and one variable reward, but that will be explained soon.
 </a>
 </p>
 
@@ -37,7 +37,9 @@ pip3 install -r requirements.txt
 ## Reward System
 <p align="justify" float="left"> 
   <img src="https://media.giphy.com/media/Izd6ZTUl6JvnjqH1a1/giphy.webp" alt="Neon Drive" align="right" width="320">
-  As the agent observes the current state of the environment and chooses an action, the environment transitions to a new state, and also returns a reward that indicates the consequences of  the action. In this task, rewards are +1 for every time the agent catches a ball and the environment terminates if all the balls were picked up or the manipulator hit the ground. This means that the most performing scenarios will end in ![equation](https://latex.codecogs.com/gif.latex?\gamma) timesteps, where ![equation](https://latex.codecogs.com/gif.latex?\gamma) means the number of objectives.
+  
+
+  As the agent observes the current state of the environment and chooses an action, the environment transitions to a new state, and also returns a reward that indicates the consequences of  the action. In this task, rewards are +1 for every time the agent catches a ball and the environment terminates if all the balls were picked up or the manipulator hit the ground. This means that the most performing scenarios will end in ![equation](https://latex.codecogs.com/gif.latex?x) timesteps, where ![equation](https://latex.codecogs.com/gif.latex?x) means the number of objectives.
   
 </p>
 
