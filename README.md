@@ -29,7 +29,9 @@ pip3 install -r requirements.txt
 ```
 ## Objectives
 <p align="justify"> 
-  <a> The environment objectives consist in 10 random points refreshing when all points is colected. Each point have one fixed reward and one variable reward, but that will be explained soon.
+  
+  <a> The environment objectives consist in ![equation](https://latex.codecogs.com/gif.latex?x) random points refreshing when all points is colected. Each point have one fixed reward and one variable reward, but that will be explained soon.
+  
 </a>
 </p>
 
