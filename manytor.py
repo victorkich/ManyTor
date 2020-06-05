@@ -11,7 +11,7 @@ PORT = 5001            # Server port
 
 
 def plot_vispy():
-    call(["python3", "plotting.py"])
+    call(["python3", "ManyTor/plotting.py"])
 
 
 def r_theta(v1, v2):
